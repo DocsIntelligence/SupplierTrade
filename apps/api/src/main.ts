@@ -8,7 +8,10 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   app.useLogger(app.get(PinoLogger));
 
   const config = app.get(ConfigService);

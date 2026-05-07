@@ -10,11 +10,10 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import App from './app/app';
+import { APP_ENV } from './config';
 import './styles.css';
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  'http://localhost:3000/api';
+const API_BASE_URL = APP_ENV.apiUrl;
 
 // Separate client for refresh — no interceptors to avoid loops
 const httpForRefresh = createHttpClient({

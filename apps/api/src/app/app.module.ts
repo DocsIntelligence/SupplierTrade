@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -10,7 +11,9 @@ import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AppLoggerModule } from './logger/logger.module';
+import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
+import { PaymentModule } from './payment/payment.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -24,6 +27,9 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UsersModule,
     HealthModule,
+    PaymentModule,
+    AdminModule,
+    LookupModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -11,9 +11,9 @@ import { startRegistration } from '@simplewebauthn/browser';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { WEB_ENV } from '../../config';
 
-const API_BASE_URL =
-  process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000/api';
+const API_BASE_URL = WEB_ENV.apiUrl;
 
 interface Identity {
   id: string;

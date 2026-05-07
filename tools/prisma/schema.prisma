@@ -3,14 +3,76 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums (SQLite doesn't support enums, use String fields) ───
+// ═══════════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════════
 
-// Provider: "email" | "google" | "github" | "linkedin"
-// Role: "user" | "admin"
+enum Role {
+  user
+  admin
+}
+
+enum Provider {
+  email
+  google
+  github
+  linkedin
+}
+
+enum PaymentType {
+  one_time
+  subscription
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum PaymentGateway {
+  razorpay
+  stripe
+}
+
+enum PlanInterval {
+  daily
+  weekly
+  monthly
+  quarterly
+  yearly
+}
+
+enum Feature {
+  documents
+  ai_tokens
+  ai_attempts
+  storage_mb
+  api_calls
+}
+
+enum FeatureAction {
+  reset
+  increment
+}
+
+enum Currency {
+  INR
+  USD
+  EUR
+  CAD
+  AUD
+  GBP
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODELS
+// ═══════════════════════════════════════════════════════════════════
 
 // ─── User ──────────────────────────────────────────────────────
 
@@ -20,17 +82,21 @@ model User {
   email         String    @unique
   username      String    @unique
   picture       String?
-  provider      String    @default("email")
-  role          String    @default("user")
+  provider      Provider  @default(email)
+  role          Role      @default(user)
   emailVerified Boolean   @default(false)
   locale        String    @default("en-US")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  secrets       Secrets?
-  identities    UserIdentity[]
-  passkeys      Passkey[]
+  secrets    Secrets?
+  identities UserIdentity[]
+  passkeys   Passkey[]
+  wallet     UserWallet?
+  payments   Payment[]
+
+  @@index([email])
 }
 
 // ─── Secrets (1:1 with User) ───────────────────────────────────
@@ -54,7 +120,7 @@ model Secrets {
 model UserIdentity {
   id                String   @id @default(cuid())
   userId            String
-  provider          String
+  provider          Provider
   providerAccountId String
   email             String?
   createdAt         DateTime @default(now())
@@ -63,6 +129,7 @@ model UserIdentity {
 
   @@unique([provider, providerAccountId])
   @@unique([userId, provider])
+  @@index([userId])
 }
 
 // ─── Passkeys (WebAuthn) ───────────────────────────────────────
@@ -74,7 +141,7 @@ model Passkey {
   counter      BigInt   @default(0)
   deviceType   String?
   backedUp     Boolean  @default(false)
-  transports   String   @default("[]")
+  transports   String[] @default([])
   label        String?
   userId       String
   createdAt    DateTime @default(now())
@@ -90,4 +157,133 @@ model Challenge {
   value     String
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+// ─── Plans ─────────────────────────────────────────────────────
+
+model Plan {
+  id              String       @id @default(cuid())
+  name            String
+  description     String?
+  type            PaymentType  @default(one_time)
+  duration        Int          @default(1)
+  interval        PlanInterval @default(monthly)
+  price           Int          @default(0)
+  originalPrice   Int?
+  discountLabel   String?
+  priceMultiplier Int          @default(100)
+  currency        Currency     @default(INR)
+  active          Boolean      @default(true)
+  gatewayPlanId   String?
+  totalCycleCount Int?         @default(1)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  features PlanFeature[]
+  wallets  UserWallet[]
+}
+
+model PlanFeature {
+  id          String        @id @default(cuid())
+  name        Feature
+  action      FeatureAction @default(reset)
+  quantity    Int           @default(0) // -1 = unlimited
+  description String?
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([name, planId])
+}
+
+// ─── Wallet ────────────────────────────────────────────────────
+
+model UserWallet {
+  id          String      @id @default(cuid())
+  paymentType PaymentType @default(one_time)
+  active      Boolean     @default(false)
+  startAt     DateTime
+  endAt       DateTime
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  usage WalletUsage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WalletUsage {
+  id       String  @id @default(cuid())
+  name     Feature
+  quantity Int     @default(0) // -1 = unlimited
+  consumed Int     @default(0)
+
+  userWalletId String
+  wallet       UserWallet @relation(fields: [userWalletId], references: [id], onDelete: Cascade)
+
+  @@unique([name, userWalletId])
+}
+
+// ─── Payments ──────────────────────────────────────────────────
+
+model Payment {
+  id                    String         @id @default(cuid())
+  gateway               PaymentGateway @default(razorpay)
+  gatewayPaymentId      String?
+  gatewayOrderId        String?
+  gatewaySubscriptionId String?
+  status                PaymentStatus  @default(pending)
+  amount                Int?
+  currency              Currency?
+  initiatedAt           DateTime?
+  confirmedAt           DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  wallets UserWallet[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Lookups (configurable dropdowns / reference data) ─────────
+
+model LookupGroup {
+  id          String  @id @default(cuid())
+  name        String
+  key         String  @unique
+  description String?
+  isPublic    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values LookupValue[]
+}
+
+model LookupValue {
+  id        String  @id @default(cuid())
+  label     String
+  value     String?
+  order     Int     @default(0)
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+  metadata  Json?
+
+  groupId String
+  group   LookupGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, value])
 }

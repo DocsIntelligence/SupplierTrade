@@ -13,9 +13,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { WEB_ENV } from '../../config';
 
-const API_BASE_URL =
-  process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000/api';
+const API_BASE_URL = WEB_ENV.apiUrl;
 
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
@@ -88,12 +88,6 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  hasError={!!errors.password}
-                  {...hookRegister('password')}
-                />
-              </FormField>
-            </div>
-                  placeholder="••••••••"
                   hasError={!!errors.password}
                   {...hookRegister('password')}
                 />

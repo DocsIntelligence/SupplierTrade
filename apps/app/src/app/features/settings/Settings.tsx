@@ -3,9 +3,9 @@ import { selectUser, useAppSelector } from '@org/store';
 import { Button, Card, UserAvatar } from '@org/ui';
 import { toast } from 'sonner';
 import { startRegistration } from '@simplewebauthn/browser';
+import { APP_ENV } from '../../../config';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const API_BASE_URL = APP_ENV.apiUrl;
 
 interface Identity {
   id: string;

@@ -80,6 +80,15 @@ export function MainLayout() {
                   >
                     Settings
                   </Link>
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setOpen(false)}
+                      className="block px-4 py-2 text-sm text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  )}
                 </div>
 
                 {/* Logout */}

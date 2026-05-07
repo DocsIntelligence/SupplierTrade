@@ -80,7 +80,7 @@ export class PasskeyService {
       },
       excludeCredentials: existingPasskeys.map((pk) => ({
         id: pk.credentialId,
-        transports: JSON.parse(pk.transports) as AuthenticatorTransportFuture[],
+        transports: pk.transports as AuthenticatorTransportFuture[],
       })),
     });
 
@@ -121,7 +121,7 @@ export class PasskeyService {
         counter: BigInt(cred.counter),
         deviceType: credentialDeviceType,
         backedUp: credentialBackedUp,
-        transports: JSON.stringify(cred.transports ?? []),
+        transports: cred.transports ?? [],
         label: label || null,
         userId,
       },
@@ -151,9 +151,7 @@ export class PasskeyService {
         });
         allowCredentials = passkeys.map((pk) => ({
           id: pk.credentialId,
-          transports: JSON.parse(
-            pk.transports,
-          ) as AuthenticatorTransportFuture[],
+          transports: pk.transports as AuthenticatorTransportFuture[],
         }));
       }
       challengeKey = `auth:${email}`;
@@ -195,9 +193,7 @@ export class PasskeyService {
         id: passkey.credentialId,
         publicKey: new Uint8Array(passkey.publicKey),
         counter: Number(passkey.counter),
-        transports: JSON.parse(
-          passkey.transports,
-        ) as AuthenticatorTransportFuture[],
+        transports: passkey.transports as AuthenticatorTransportFuture[],
       },
     });
 

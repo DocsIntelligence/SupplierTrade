@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { isPublicRoute } from './lib/auth-routes';
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublicRoute(pathname)) return NextResponse.next();
 

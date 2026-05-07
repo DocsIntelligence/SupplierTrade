@@ -12,9 +12,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { APP_ENV } from '../../../../config';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const API_BASE_URL = APP_ENV.apiUrl;
 
 export function Login() {
   const dispatch = useAppDispatch();

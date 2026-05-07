@@ -64,5 +64,8 @@ apps/**/.env
 apps/**/.env.local
 
 # Prisma
-tools/prisma/dev.db
-tools/prisma/dev.db-journal
+tools/prisma/**/*.db
+tools/prisma/**/*.db-journal
+
+# Claude Code runtime artifacts
+.claude/scheduled_tasks.lock

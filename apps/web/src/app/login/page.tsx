@@ -15,9 +15,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { WEB_ENV } from '../../config';
 
-const API_BASE_URL =
-  process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000/api';
+const API_BASE_URL = WEB_ENV.apiUrl;
 
 function LoginForm() {
   const dispatch = useAppDispatch();

@@ -40,6 +40,12 @@ export default async function HomePage() {
         >
           Create account
         </Link>
+        <Link
+          href="/pricing"
+          className="px-6 py-3 text-foreground/70 hover:text-foreground transition-colors text-center"
+        >
+          View pricing →
+        </Link>
       </div>
 
       <footer className="mt-8 text-sm text-foreground/40">

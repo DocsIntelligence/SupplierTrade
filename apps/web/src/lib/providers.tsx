@@ -8,10 +8,9 @@ import {
   createUsersService,
 } from '@org/api-client';
 import { authActions, configureAppStore, type AppStore } from '@org/store';
+import { WEB_ENV } from '../config';
 
-const API_BASE_URL =
-  (process.env['NEXT_PUBLIC_API_URL'] as string | undefined) ??
-  'http://localhost:3000/api';
+const API_BASE_URL = WEB_ENV.apiUrl;
 
 let storeRef: AppStore | null = null;
 

@@ -4,6 +4,11 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "build": {
+      "options": {
+        "command": "next build --webpack"
+      }
+    },
     "serve": {
       "dependsOn": ["dev"]
     },

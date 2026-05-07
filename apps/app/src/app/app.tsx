@@ -7,6 +7,7 @@ import {
   useAppSelector,
 } from '@org/store';
 import { ProtectedRoute } from './components/protected-route/ProtectedRoute';
+import { AdminDashboard } from './features/admin/AdminDashboard';
 import { AuthCallback } from './features/auth/callback/AuthCallback';
 import { ForgotPassword } from './features/auth/forgot-password/ForgotPassword';
 import { Login } from './features/auth/login/Login';
@@ -51,6 +52,7 @@ export function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
