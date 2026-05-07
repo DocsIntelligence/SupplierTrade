@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import {
   fetchMeThunk,
-  selectIsAuthenticated,
+  selectAuthStatus,
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
@@ -17,11 +17,17 @@ import { MainLayout } from './layouts/main-layout/MainLayout';
 
 export function App() {
   const dispatch = useAppDispatch();
-  const isAuth = useAppSelector(selectIsAuthenticated);
+  const status = useAppSelector(selectAuthStatus);
+  const attempted = useRef(false);
 
+  // Try to fetch user once on mount (cookie sent automatically).
+  // If it fails (no cookie / expired), we just stay on auth pages.
   useEffect(() => {
-    if (isAuth) void dispatch(fetchMeThunk());
-  }, [dispatch, isAuth]);
+    if (!attempted.current && status === 'idle') {
+      attempted.current = true;
+      void dispatch(fetchMeThunk());
+    }
+  }, [dispatch, status]);
 
   return (
     <Routes>

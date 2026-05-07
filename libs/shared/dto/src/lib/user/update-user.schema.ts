@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userSchema } from './user.schema.js';
+import { userSchema } from './user.schema';
 
 export const updateUserSchema = userSchema
   .pick({ name: true, username: true, picture: true, locale: true })

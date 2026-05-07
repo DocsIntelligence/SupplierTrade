@@ -33,37 +33,57 @@ export function Register() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <h2 className="text-lg font-semibold">Create account</h2>
-      <FormField label="Name" error={errors.name?.message}>
-        <Input invalid={!!errors.name} {...hookRegister('name')} />
-      </FormField>
-      <FormField label="Username" error={errors.username?.message}>
-        <Input invalid={!!errors.username} {...hookRegister('username')} />
-      </FormField>
-      <FormField label="Email" error={errors.email?.message}>
-        <Input
-          type="email"
-          invalid={!!errors.email}
-          {...hookRegister('email')}
-        />
-      </FormField>
-      <FormField label="Password" error={errors.password?.message}>
-        <Input
-          type="password"
-          invalid={!!errors.password}
-          {...hookRegister('password')}
-        />
-      </FormField>
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Create account</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Fill in your details to get started
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <FormField label="Name" error={errors.name?.message}>
+          <Input
+            placeholder="John Doe"
+            invalid={!!errors.name}
+            {...hookRegister('name')}
+          />
+        </FormField>
+        <FormField label="Username" error={errors.username?.message}>
+          <Input
+            placeholder="johndoe"
+            invalid={!!errors.username}
+            {...hookRegister('username')}
+          />
+        </FormField>
+        <FormField label="Email" error={errors.email?.message}>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            invalid={!!errors.email}
+            {...hookRegister('email')}
+          />
+        </FormField>
+        <FormField label="Password" error={errors.password?.message}>
+          <Input
+            type="password"
+            placeholder="••••••••"
+            invalid={!!errors.password}
+            {...hookRegister('password')}
+          />
+        </FormField>
+      </div>
+
       <Button type="submit" isLoading={status === 'pending'} className="w-full">
         Sign up
       </Button>
-      <div className="text-sm">
+
+      <p className="text-sm text-center text-gray-600 pt-2">
         Already have an account?{' '}
-        <Link to="/login" className="text-blue-600 hover:underline">
+        <Link to="/login" className="text-blue-600 hover:underline font-medium">
           Sign in
         </Link>
-      </div>
+      </p>
     </form>
   );
 }

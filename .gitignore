@@ -55,3 +55,10 @@ out
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Environment files (keep .env.example tracked)
+.env
+.env.local
+.env.*.local
+apps/**/.env
+apps/**/.env.local

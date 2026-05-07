@@ -1,11 +1,17 @@
 import { Outlet } from 'react-router-dom';
+import { Card } from '@org/ui';
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow border border-gray-100">
-        <h1 className="text-xl font-semibold mb-6">@org/app</h1>
-        <Outlet />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">@org/app</h1>
+          <p className="text-sm text-gray-500 mt-1">Welcome back</p>
+        </div>
+        <Card padding="lg" className="rounded-xl">
+          <Outlet />
+        </Card>
       </div>
     </div>
   );

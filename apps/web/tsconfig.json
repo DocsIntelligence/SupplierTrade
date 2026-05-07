@@ -3,69 +3,25 @@
   "compilerOptions": {
     "jsx": "preserve",
     "noEmit": true,
-    "emitDeclarationOnly": false,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["es2022", "dom", "dom.iterable"],
     "allowJs": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@org/dto": ["../../libs/shared/dto/src/index.ts"],
+      "@org/utils": ["../../libs/shared/utils/src/index.ts"],
+      "@org/api-client": ["../../libs/shared/api-client/src/index.ts"],
+      "@org/ui": ["../../libs/shared/ui/src/index.ts"],
+      "@org/hooks": ["../../libs/shared/hooks/src/index.ts"],
+      "@org/store": ["../../libs/shared/store/src/index.ts"]
     },
-    "types": ["jest", "node"],
-    "outDir": "dist",
-    "rootDir": "src",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "../../apps/web/.next/types/**/*.ts",
-    "../../dist/apps/web/.next/types/**/*.ts",
-    "next-env.d.ts"
-  ],
-  "exclude": [
-    "out-tsc",
-    "dist",
-    "node_modules",
-    "jest.config.ts",
-    "jest.config.cts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    ".next",
-    "eslint.config.js",
-    "eslint.config.cjs",
-    "eslint.config.mjs"
-  ],
-  "references": [
-    {
-      "path": "../../libs/shared/utils"
-    },
-    {
-      "path": "../../libs/shared/ui"
-    },
-    {
-      "path": "../../libs/shared/store"
-    },
-    {
-      "path": "../../libs/shared/hooks"
-    },
-    {
-      "path": "../../libs/shared/dto"
-    },
-    {
-      "path": "../../libs/shared/api-client"
-    }
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "next-env.d.ts", "../../apps/web/.next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".next", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

@@ -1,5 +1,5 @@
 import type { UpdateUserDto, User } from '@org/dto';
-import type { HttpClient } from './http.js';
+import type { HttpClient } from './http';
 
 export const createUsersService = (http: HttpClient) => ({
   list: () => http.get<User[]>('/users').then((r) => r.data),

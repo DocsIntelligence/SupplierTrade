@@ -3,35 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "types": ["node"],
-    "rootDir": "src",
-    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
-    "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
     "target": "es2021",
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true
+    "module": "commonjs"
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "out-tsc",
-    "dist",
-    "jest.config.ts",
-    "jest.config.cts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "eslint.config.js",
-    "eslint.config.cjs",
-    "eslint.config.mjs"
-  ],
-  "references": [
-    {
-      "path": "../../libs/shared/utils/tsconfig.lib.json"
-    },
-    {
-      "path": "../../libs/shared/dto/tsconfig.lib.json"
-    }
-  ]
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "jest.config.ts"]
 }

@@ -1,2 +1,2 @@
-export * from './user.schema.js';
-export * from './update-user.schema.js';
+export * from './user.schema';
+export * from './update-user.schema';

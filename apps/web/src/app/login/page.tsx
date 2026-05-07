@@ -8,7 +8,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Button, FormField, Input } from '@org/ui';
+import { Button, Card, FormField, Input } from '@org/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -37,38 +37,65 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-md p-8 bg-white rounded-lg shadow space-y-4"
-      >
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <FormField label="Email or username" error={errors.identifier?.message}>
-          <Input invalid={!!errors.identifier} {...register('identifier')} />
-        </FormField>
-        <FormField label="Password" error={errors.password?.message}>
-          <Input
-            type="password"
-            invalid={!!errors.password}
-            {...register('password')}
-          />
-        </FormField>
-        <Button
-          type="submit"
-          isLoading={status === 'pending'}
-          className="w-full"
-        >
-          Sign in
-        </Button>
-        <div className="text-sm flex items-center justify-between">
-          <Link href="/forgot-password" className="text-blue-600 hover:underline">
-            Forgot password?
-          </Link>
-          <Link href="/register" className="text-blue-600 hover:underline">
-            Create account
-          </Link>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">@org/web</h1>
+          <p className="text-sm text-gray-500 mt-1">Welcome back</p>
         </div>
-      </form>
+
+        <Card padding="lg" className="rounded-xl">
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Sign in</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Enter your credentials to access your account
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                label="Email or username"
+                error={errors.identifier?.message}
+              >
+                <Input
+                  placeholder="you@example.com"
+                  invalid={!!errors.identifier}
+                  {...register('identifier')}
+                />
+              </FormField>
+              <FormField label="Password" error={errors.password?.message}>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  invalid={!!errors.password}
+                  {...register('password')}
+                />
+              </FormField>
+            </div>
+
+            <Button
+              type="submit"
+              isLoading={status === 'pending'}
+              className="w-full"
+            >
+              Sign in
+            </Button>
+
+            <div className="text-sm flex items-center justify-between pt-2">
+              <Link
+                href="/forgot-password"
+                className="text-blue-600 hover:underline"
+              >
+                Forgot password?
+              </Link>
+              <Link href="/register" className="text-blue-600 hover:underline">
+                Create account
+              </Link>
+            </div>
+          </form>
+        </Card>
+      </div>
     </main>
   );
 }

@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "tui": {
+    "enabled": false
+  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -15,20 +18,6 @@
     "sharedGlobals": []
   },
   "plugins": [
-    {
-      "plugin": "@nx/js/typescript",
-      "options": {
-        "typecheck": {
-          "targetName": "typecheck"
-        },
-        "build": {
-          "targetName": "build",
-          "configName": "tsconfig.lib.json",
-          "buildDepsName": "build-deps",
-          "watchDepsName": "watch-deps"
-        }
-      }
-    },
     {
       "plugin": "@nx/webpack/plugin",
       "options": {
@@ -87,11 +76,7 @@
     }
   ],
   "analytics": false,
-  "targetDefaults": {
-    "test": {
-      "dependsOn": ["^build"]
-    }
-  },
+  "targetDefaults": {},
   "generators": {
     "@nx/next": {
       "application": {

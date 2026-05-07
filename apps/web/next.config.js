@@ -7,14 +7,25 @@ const { composePlugins, withNx } = require('@nx/next');
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
-  // Use this to set Nx-specific options
-  // See: https://nx.dev/recipes/next/next-config-setup
   nx: {},
+
+  // Dev server port — avoids conflict with API (3000) and React app (4200)
+  devIndicators: false,
+
+  async rewrites() {
+    // Proxy /api/* to the NestJS backend in development
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const baseUrl = apiUrl.replace(/\/api$/, '');
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${baseUrl}/api/:path*`,
+      },
+    ];
+  },
 };
 
-const plugins = [
-  // Add more Next.js plugins to this list if needed.
-  withNx,
-];
+const plugins = [withNx];
 
 module.exports = composePlugins(...plugins)(nextConfig);

@@ -9,7 +9,7 @@ import type {
   ResetPasswordDto,
   User,
 } from '@org/dto';
-import type { HttpClient } from './http.js';
+import type { HttpClient } from './http';
 
 export const createAuthService = (http: HttpClient) => ({
   login: (payload: LoginDto) =>

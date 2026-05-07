@@ -206,10 +206,9 @@ export const selectUser = (state: { [AUTH_FEATURE_KEY]: AuthState }) =>
   state[AUTH_FEATURE_KEY].user;
 export const selectIsAuthenticated = (state: {
   [AUTH_FEATURE_KEY]: AuthState;
-}) => Boolean(state[AUTH_FEATURE_KEY].accessToken);
-export const selectAccessToken = (state: {
-  [AUTH_FEATURE_KEY]: AuthState;
-}) => state[AUTH_FEATURE_KEY].accessToken;
-export const selectAuthStatus = (state: {
-  [AUTH_FEATURE_KEY]: AuthState;
-}) => state[AUTH_FEATURE_KEY].status;
+}) =>
+  Boolean(state[AUTH_FEATURE_KEY].user || state[AUTH_FEATURE_KEY].accessToken);
+export const selectAccessToken = (state: { [AUTH_FEATURE_KEY]: AuthState }) =>
+  state[AUTH_FEATURE_KEY].accessToken;
+export const selectAuthStatus = (state: { [AUTH_FEATURE_KEY]: AuthState }) =>
+  state[AUTH_FEATURE_KEY].status;

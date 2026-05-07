@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { User } from '@org/dto';
 import { ErrorMessage } from '@org/utils';
+import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 
@@ -12,6 +13,16 @@ export interface JwtPayload {
   role: string;
 }
 
+/**
+ * Extracts JWT from cookie first, then falls back to Authorization header.
+ * This allows both cookie-based (web/app subdomains) and header-based (mobile/API) auth.
+ */
+const extractJwt = (req: Request): string | null => {
+  const fromCookie = req?.cookies?.['access_token'] as string | undefined;
+  if (fromCookie) return fromCookie;
+  return ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+};
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
@@ -19,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     config: ConfigService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: extractJwt,
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('ACCESS_TOKEN_SECRET'),
     });

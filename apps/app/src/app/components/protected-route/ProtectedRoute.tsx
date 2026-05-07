@@ -3,6 +3,7 @@ import {
   selectIsAuthenticated,
   useAppSelector,
 } from '@org/store';
+import { PageLoader } from '@org/ui';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -15,12 +16,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const status = useAppSelector(selectAuthStatus);
   const location = useLocation();
 
-  if (!isAuth) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  // Show loading only while the initial fetchMe is in flight
+  if (status === 'pending') {
+    return <PageLoader />;
   }
 
-  if (status === 'pending') {
-    return <div className="p-6 text-sm text-gray-500">Loading…</div>;
+  // If not authenticated (idle = never tried, failed = 401, succeeded but no user)
+  if (!isAuth) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

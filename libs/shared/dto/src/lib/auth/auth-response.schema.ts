@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userSchema } from '../user/user.schema.js';
+import { userSchema } from '../user/user.schema';
 
 export const authResponseSchema = z.object({
   user: userSchema,

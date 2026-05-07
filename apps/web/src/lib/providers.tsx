@@ -2,7 +2,11 @@
 
 import { useMemo, type ReactNode } from 'react';
 import { Provider } from 'react-redux';
-import { createAuthService, createHttpClient, createUsersService } from '@org/api-client';
+import {
+  createAuthService,
+  createHttpClient,
+  createUsersService,
+} from '@org/api-client';
 import { authActions, configureAppStore, type AppStore } from '@org/store';
 
 const API_BASE_URL =
@@ -12,24 +16,21 @@ const API_BASE_URL =
 let storeRef: AppStore | null = null;
 
 const buildStore = (): AppStore => {
-  const httpForRefresh = createHttpClient({ baseURL: API_BASE_URL });
+  const httpForRefresh = createHttpClient({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
+  });
   const authForRefresh = createAuthService(httpForRefresh);
 
   const http = createHttpClient({
     baseURL: API_BASE_URL,
     withCredentials: true,
-    getAccessToken: () => storeRef?.getState().auth.accessToken ?? null,
+    // Cookies are sent automatically — no need for getAccessToken
     refreshAccessToken: async () => {
-      const refreshToken = storeRef?.getState().auth.refreshToken;
-      if (!refreshToken || !storeRef) return null;
+      if (!storeRef) return null;
       try {
-        const result = await authForRefresh.refresh({ refreshToken });
-        storeRef.dispatch(
-          authActions.setTokens({
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
-          }),
-        );
+        // Cookie-based refresh: browser sends refresh_token cookie automatically
+        const result = await authForRefresh.refresh({} as never);
         storeRef.dispatch(authActions.setUser(result.user));
         return result.accessToken;
       } catch {

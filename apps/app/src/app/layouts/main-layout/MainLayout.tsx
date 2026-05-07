@@ -4,6 +4,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
+import { Avatar, Button } from '@org/ui';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 
 export function MainLayout() {
@@ -17,25 +18,26 @@ export function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/dashboard" className="font-semibold">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <Link to="/dashboard" className="text-lg font-semibold text-gray-900">
             @org/app
           </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600">{user?.email}</span>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="text-red-600 hover:underline"
-            >
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Avatar name={user?.name} size="sm" />
+              <span className="text-sm text-gray-700 hidden sm:inline">
+                {user?.email}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onLogout}>
               Logout
-            </button>
+            </Button>
           </div>
         </div>
       </header>
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         <Outlet />
       </main>
     </div>

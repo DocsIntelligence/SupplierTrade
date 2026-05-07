@@ -37,22 +37,37 @@ export function Login() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <h2 className="text-lg font-semibold">Sign in</h2>
-      <FormField label="Email or username" error={errors.identifier?.message}>
-        <Input invalid={!!errors.identifier} {...register('identifier')} />
-      </FormField>
-      <FormField label="Password" error={errors.password?.message}>
-        <Input
-          type="password"
-          invalid={!!errors.password}
-          {...register('password')}
-        />
-      </FormField>
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Sign in</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Enter your credentials to access your account
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <FormField label="Email or username" error={errors.identifier?.message}>
+          <Input
+            placeholder="you@example.com"
+            invalid={!!errors.identifier}
+            {...register('identifier')}
+          />
+        </FormField>
+        <FormField label="Password" error={errors.password?.message}>
+          <Input
+            type="password"
+            placeholder="••••••••"
+            invalid={!!errors.password}
+            {...register('password')}
+          />
+        </FormField>
+      </div>
+
       <Button type="submit" isLoading={status === 'pending'} className="w-full">
         Sign in
       </Button>
-      <div className="text-sm flex items-center justify-between">
+
+      <div className="text-sm flex items-center justify-between pt-2">
         <Link to="/forgot-password" className="text-blue-600 hover:underline">
           Forgot password?
         </Link>

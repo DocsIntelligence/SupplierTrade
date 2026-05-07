@@ -6,21 +6,24 @@ export type UnauthorizedHandler = () => void | Promise<void>;
 
 export type HttpClientOptions = {
   baseURL: string;
+  /** Send cookies cross-origin (required for subdomain cookie auth) */
   withCredentials?: boolean;
+  /** Optional: provide access token from memory (used alongside cookies) */
   getAccessToken?: TokenGetter;
+  /** Called on 401 to attempt token refresh via cookie or memory */
   refreshAccessToken?: TokenRefresher;
+  /** Called when refresh also fails — user should be logged out */
   onUnauthorized?: UnauthorizedHandler;
 };
 
-export const createHttpClient = (
-  options: HttpClientOptions,
-): AxiosInstance => {
+export const createHttpClient = (options: HttpClientOptions): AxiosInstance => {
   const instance = axios.create({
     baseURL: options.baseURL,
     withCredentials: options.withCredentials ?? true,
     timeout: 30_000,
   });
 
+  // Attach access token from memory if available (for non-cookie flows or SSR)
   instance.interceptors.request.use(async (config) => {
     if (options.getAccessToken) {
       const token = await options.getAccessToken();

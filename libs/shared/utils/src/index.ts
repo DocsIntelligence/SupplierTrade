@@ -1,3 +1,4 @@
-export * from './lib/errors.js';
-export * from './lib/strings.js';
-export * from './lib/auth-tokens.js';
+export * from './lib/errors';
+export * from './lib/strings';
+export * from './lib/auth-tokens';
+export * from './lib/cn';

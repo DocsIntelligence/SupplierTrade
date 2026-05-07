@@ -1,8 +1,8 @@
 import type { AuthService, UsersService } from '@org/api-client';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import { APP_FEATURE_KEY, appReducer } from './slices/app.slice.js';
-import { AUTH_FEATURE_KEY, authReducer } from './slices/auth.slice.js';
-import { USERS_FEATURE_KEY, usersReducer } from './slices/users.slice.js';
+import { APP_FEATURE_KEY, appReducer } from './slices/app.slice';
+import { AUTH_FEATURE_KEY, authReducer } from './slices/auth.slice';
+import { USERS_FEATURE_KEY, usersReducer } from './slices/users.slice';
 
 export const rootReducer = combineReducers({
   [APP_FEATURE_KEY]: appReducer,

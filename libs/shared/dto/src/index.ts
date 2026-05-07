@@ -1,3 +1,3 @@
-export * from './lib/auth/index.js';
-export * from './lib/user/index.js';
-export * from './lib/common/index.js';
+export * from './lib/auth/index';
+export * from './lib/user/index';
+export * from './lib/common/index';

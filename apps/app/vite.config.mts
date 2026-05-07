@@ -1,6 +1,8 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import react from '@vitejs/plugin-react';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -8,16 +10,15 @@ export default defineConfig(() => ({
   server: {
     port: 4200,
     host: 'localhost',
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd())],
+    },
   },
   preview: {
     port: 4200,
     host: 'localhost',
   },
-  plugins: [react()],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [],
-  // },
+  plugins: [react(), tailwindcss(), nxViteTsPaths()],
   build: {
     outDir: './dist',
     emptyOutDir: true,
