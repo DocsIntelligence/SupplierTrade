@@ -61,6 +61,7 @@ export default function RegisterPage() {
               <FormField label="Name" error={errors.name?.message}>
                 <Input
                   placeholder="John Doe"
+                  autoComplete="name"
                   hasError={!!errors.name}
                   {...hookRegister('name')}
                 />
@@ -68,6 +69,7 @@ export default function RegisterPage() {
               <FormField label="Username" error={errors.username?.message}>
                 <Input
                   placeholder="johndoe"
+                  autoComplete="username"
                   hasError={!!errors.username}
                   {...hookRegister('username')}
                 />
@@ -76,6 +78,7 @@ export default function RegisterPage() {
                 <Input
                   type="email"
                   placeholder="you@example.com"
+                  autoComplete="email"
                   hasError={!!errors.email}
                   {...hookRegister('email')}
                 />
@@ -83,6 +86,13 @@ export default function RegisterPage() {
               <FormField label="Password" error={errors.password?.message}>
                 <Input
                   type="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  hasError={!!errors.password}
+                  {...hookRegister('password')}
+                />
+              </FormField>
+            </div>
                   placeholder="••••••••"
                   hasError={!!errors.password}
                   {...hookRegister('password')}

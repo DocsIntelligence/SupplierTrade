@@ -9,9 +9,10 @@ import {
   useAppSelector,
 } from '@org/store';
 import { Button, Card, FormField, Input, OAuthButtons } from '@org/ui';
+import { startAuthentication } from '@simplewebauthn/browser';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { status } = useAppSelector(selectAuth);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
 
   const {
     register,
@@ -30,22 +32,62 @@ function LoginForm() {
     formState: { errors },
   } = useForm<LoginDto>({ resolver: zodResolver(loginSchema) });
 
+  const redirectTo = params.get('next') ?? '/';
+
   const onSubmit = handleSubmit(async (values) => {
     const result = await dispatch(loginThunk(values));
     if (loginThunk.fulfilled.match(result)) {
       toast.success('Welcome back!');
-      router.replace(params.get('next') ?? '/dashboard');
+      router.replace(redirectTo);
     } else {
       toast.error('Invalid credentials');
     }
   });
 
+  const loginWithPasskey = async () => {
+    setPasskeyLoading(true);
+    try {
+      const optionsRes = await fetch(
+        `${API_BASE_URL}/auth/passkey/login/options`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      );
+      if (!optionsRes.ok) throw new Error('Failed to get options');
+      const { _challengeKey, ...options } = await optionsRes.json();
+
+      const credential = await startAuthentication({ optionsJSON: options });
+
+      const verifyRes = await fetch(
+        `${API_BASE_URL}/auth/passkey/login/verify`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential, challengeKey: _challengeKey }),
+        },
+      );
+      if (!verifyRes.ok) throw new Error('Verification failed');
+
+      toast.success('Signed in with passkey!');
+      router.replace(redirectTo);
+    } catch (e: any) {
+      if (e.name !== 'NotAllowedError') {
+        toast.error(e.message ?? 'Passkey login failed');
+      }
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
+
   return (
     <Card className="rounded-xl p-8">
       <form onSubmit={onSubmit} className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Sign in</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-xl font-semibold text-foreground">Sign in</h2>
+          <p className="text-sm text-foreground/60 mt-1">
             Enter your credentials to access your account
           </p>
         </div>
@@ -57,6 +99,7 @@ function LoginForm() {
           >
             <Input
               placeholder="you@example.com"
+              autoComplete="username"
               hasError={!!errors.identifier}
               {...register('identifier')}
             />
@@ -65,6 +108,7 @@ function LoginForm() {
             <Input
               type="password"
               placeholder="••••••••"
+              autoComplete="current-password"
               hasError={!!errors.password}
               {...register('password')}
             />
@@ -77,6 +121,30 @@ function LoginForm() {
           className="w-full"
         >
           Sign in
+        </Button>
+
+        {/* Passkey login */}
+        <Button
+          type="button"
+          variant="outline"
+          isLoading={passkeyLoading}
+          className="w-full"
+          onClick={loginWithPasskey}
+        >
+          <svg
+            className="size-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+            />
+          </svg>
+          Sign in with passkey
         </Button>
 
         <div className="relative py-2">
@@ -95,11 +163,11 @@ function LoginForm() {
         <div className="text-sm flex items-center justify-between pt-2">
           <Link
             href="/forgot-password"
-            className="text-blue-600 hover:underline"
+            className="text-primary hover:underline"
           >
             Forgot password?
           </Link>
-          <Link href="/register" className="text-blue-600 hover:underline">
+          <Link href="/register" className="text-primary hover:underline">
             Create account
           </Link>
         </div>
