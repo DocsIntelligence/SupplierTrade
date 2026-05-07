@@ -17,6 +17,7 @@ export {
 } from './form';
 export * from './input';
 export * from './label';
+export * from './oauth-buttons';
 export * from './page-loader';
 export * from './popover';
 export * from './progress';

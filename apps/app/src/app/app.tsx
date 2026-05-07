@@ -7,11 +7,13 @@ import {
   useAppSelector,
 } from '@org/store';
 import { ProtectedRoute } from './components/protected-route/ProtectedRoute';
+import { AuthCallback } from './features/auth/callback/AuthCallback';
 import { ForgotPassword } from './features/auth/forgot-password/ForgotPassword';
 import { Login } from './features/auth/login/Login';
 import { Register } from './features/auth/register/Register';
 import { ResetPassword } from './features/auth/reset-password/ResetPassword';
 import { Dashboard } from './features/dashboard/Dashboard';
+import { Settings } from './features/settings/Settings';
 import { AuthLayout } from './layouts/auth-layout/AuthLayout';
 import { MainLayout } from './layouts/main-layout/MainLayout';
 
@@ -36,6 +38,7 @@ export function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Route>
 
       <Route
@@ -47,6 +50,7 @@ export function App() {
       >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

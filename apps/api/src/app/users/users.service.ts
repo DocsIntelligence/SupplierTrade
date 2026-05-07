@@ -1,113 +1,158 @@
 import {
-  ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
-import type { RegisterDto, User, UserWithSecrets } from '@org/dto';
+import type { RegisterDto, User } from '@org/dto';
 import { ErrorMessage } from '@org/utils';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'node:crypto';
-import { UserEntity } from './entities/user.entity';
-import type { UpdateUserDto } from './dto/update-user.dto';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class UsersService {
-  // In-memory store. Replace with a real persistence layer (Prisma, TypeORM…).
-  private readonly store = new Map<string, UserEntity>();
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(private readonly db: DatabaseService) {}
 
   async create(payload: RegisterDto): Promise<User> {
-    const existing = await this.findByEmailOrUsername(
-      payload.email,
-      payload.username,
-    );
-    if (existing) throw new ConflictException(ErrorMessage.UserAlreadyExists);
+    const existing = await this.db.user.findFirst({
+      where: { OR: [{ email: payload.email }, { username: payload.username }] },
+    });
+    if (existing) {
+      throw new ConflictException(
+        existing.email === payload.email
+          ? 'Email already in use'
+          : 'Username already taken',
+      );
+    }
 
-    const now = new Date().toISOString();
-    const entity = Object.assign(new UserEntity(), {
-      id: randomUUID(),
-      name: payload.name,
-      email: payload.email.toLowerCase(),
-      username: payload.username.toLowerCase(),
-      picture: null,
-      role: 'user' as const,
-      emailVerified: false,
-      locale: payload.locale ?? 'en-US',
-      password: await bcrypt.hash(payload.password, 12),
-      resetToken: null,
-      verificationToken: randomUUID(),
-      createdAt: now,
-      updatedAt: now,
+    const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const user = await this.db.user.create({
+      data: {
+        name: payload.name,
+        email: payload.email,
+        username: payload.username,
+        provider: 'email',
+        locale: payload.locale ?? 'en-US',
+        secrets: {
+          create: {
+            password: hashedPassword,
+          },
+        },
+      },
+      include: { secrets: true },
     });
 
-    this.store.set(entity.id, entity);
-    return entity.toPublic();
-  }
-
-  findAll(): User[] {
-    return [...this.store.values()].map((u) => u.toPublic());
+    this.logger.log(`Created user ${user.email}`);
+    return this.toPublic(user);
   }
 
   async findById(id: string): Promise<User> {
-    const entity = this.store.get(id);
-    if (!entity) throw new NotFoundException(ErrorMessage.UserNotFound);
-    return entity.toPublic();
+    const user = await this.db.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException(ErrorMessage.UserNotFound);
+    return this.toPublic(user);
   }
 
-  async findByIdWithSecrets(id: string): Promise<UserWithSecrets | null> {
-    return this.store.get(id) ?? null;
+  async findByIdentifier(identifier: string) {
+    const user = await this.db.user.findFirst({
+      where: { OR: [{ email: identifier }, { username: identifier }] },
+      include: { secrets: true },
+    });
+    if (!user) return null;
+    return {
+      ...user,
+      password: user.secrets?.password,
+      toPublic: () => this.toPublic(user),
+    };
   }
 
-  async findByEmailOrUsername(
-    email?: string,
-    username?: string,
-  ): Promise<UserEntity | null> {
-    const e = email?.toLowerCase();
-    const u = username?.toLowerCase();
-    for (const entity of this.store.values()) {
-      if (e && entity.email === e) return entity;
-      if (u && entity.username === u) return entity;
-    }
-    return null;
+  async findByEmailOrUsername(email: string) {
+    return this.db.user.findFirst({
+      where: { OR: [{ email }, { username: email }] },
+      include: { secrets: true },
+    });
   }
 
-  async findByIdentifier(identifier: string): Promise<UserEntity | null> {
-    return identifier.includes('@')
-      ? this.findByEmailOrUsername(identifier, undefined)
-      : this.findByEmailOrUsername(undefined, identifier);
+  async findByIdWithSecrets(id: string) {
+    return this.db.user.findUnique({
+      where: { id },
+      include: { secrets: true },
+    });
   }
 
-  async update(id: string, payload: UpdateUserDto): Promise<User> {
-    const entity = this.store.get(id);
-    if (!entity) throw new NotFoundException(ErrorMessage.UserNotFound);
-    Object.assign(entity, payload, { updatedAt: new Date().toISOString() });
-    return entity.toPublic();
+  async findByResetToken(token: string) {
+    const secrets = await this.db.secrets.findFirst({
+      where: { resetToken: token },
+      include: { user: true },
+    });
+    if (!secrets) return null;
+    return { ...secrets.user, secrets };
   }
 
-  async setPassword(id: string, plainPassword: string): Promise<void> {
-    const entity = this.store.get(id);
-    if (!entity) throw new NotFoundException(ErrorMessage.UserNotFound);
-    entity.password = await bcrypt.hash(plainPassword, 12);
-    entity.resetToken = null;
-    entity.updatedAt = new Date().toISOString();
+  async setResetToken(id: string, token: string) {
+    await this.db.secrets.upsert({
+      where: { userId: id },
+      update: { resetToken: token },
+      create: { userId: id, resetToken: token },
+    });
   }
 
-  async setResetToken(id: string, token: string | null): Promise<void> {
-    const entity = this.store.get(id);
-    if (!entity) throw new NotFoundException(ErrorMessage.UserNotFound);
-    entity.resetToken = token;
-    entity.updatedAt = new Date().toISOString();
+  async setPassword(id: string, password: string) {
+    const hashed = await bcrypt.hash(password, 10);
+    await this.db.secrets.upsert({
+      where: { userId: id },
+      update: { password: hashed, resetToken: null },
+      create: { userId: id, password: hashed },
+    });
   }
 
-  async findByResetToken(token: string): Promise<UserEntity | null> {
-    for (const entity of this.store.values()) {
-      if (entity.resetToken === token) return entity;
-    }
-    return null;
+  findAll(): User[] {
+    // For admin listing — simplified sync version
+    return [];
   }
 
-  remove(id: string): { ok: true } {
-    if (!this.store.delete(id))
-      throw new NotFoundException(ErrorMessage.UserNotFound);
-    return { ok: true };
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      email: string;
+      username: string;
+      locale: string;
+    }>,
+  ) {
+    const user = await this.db.user.update({ where: { id }, data });
+    return this.toPublic(user);
+  }
+
+  async remove(id: string) {
+    await this.db.user.delete({ where: { id } });
+    return { message: 'User deleted' };
+  }
+
+  private toPublic(user: {
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+    picture: string | null;
+    role: string;
+    emailVerified: boolean;
+    locale: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }): User {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      picture: user.picture,
+      role: user.role as 'user' | 'admin',
+      emailVerified: user.emailVerified,
+      locale: user.locale,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
   }
 }

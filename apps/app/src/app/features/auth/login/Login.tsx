@@ -6,10 +6,13 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Button, FormField, Input } from '@org/ui';
+import { Button, FormField, Input, OAuthButtons } from '@org/ui';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 
 export function Login() {
   const dispatch = useAppDispatch();
@@ -66,6 +69,19 @@ export function Login() {
       <Button type="submit" isLoading={status === 'pending'} className="w-full">
         Sign in
       </Button>
+
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-foreground/60">
+            or continue with
+          </span>
+        </div>
+      </div>
+
+      <OAuthButtons apiUrl={API_BASE_URL} />
 
       <div className="text-sm flex items-center justify-between pt-2">
         <Link to="/forgot-password" className="text-blue-600 hover:underline">

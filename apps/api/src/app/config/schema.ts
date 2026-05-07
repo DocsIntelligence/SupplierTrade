@@ -61,6 +61,19 @@ export const envSchema = z
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     GOOGLE_CALLBACK_URL: z.string().url().optional(),
 
+    // ── OAuth: GitHub ─────────────────────────────────────────────────────
+    GITHUB_CLIENT_ID: z.string().min(1).optional(),
+    GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+    GITHUB_CALLBACK_URL: z.string().url().optional(),
+
+    // ── OAuth: LinkedIn ───────────────────────────────────────────────────
+    LINKEDIN_CLIENT_ID: z.string().min(1).optional(),
+    LINKEDIN_CLIENT_SECRET: z.string().min(1).optional(),
+    LINKEDIN_CALLBACK_URL: z.string().url().optional(),
+
+    // ── App URL (for passkey RP ID) ───────────────────────────────────────
+    PUBLIC_URL: z.string().url().default('http://localhost:3000'),
+
     // ── Mail / SMTP ───────────────────────────────────────────────────────
     MAIL_HOST: z.string().min(1).optional(),
     MAIL_PORT: z.coerce.number().int().min(1).max(65535).optional(),
@@ -74,8 +87,8 @@ export const envSchema = z
     // ── Database ──────────────────────────────────────────────────────────
     DATABASE_URL: z
       .string()
-      .url('DATABASE_URL must be a valid connection string')
-      .optional(),
+      .min(1, 'DATABASE_URL must be set')
+      .default('file:./tools/prisma/dev.db'),
 
     // ── Logging ───────────────────────────────────────────────────────────
     LOG_LEVEL: z
@@ -103,9 +116,6 @@ export const envSchema = z
       if (!data.COOKIE_SECURE) {
         ctx.addIssue('COOKIE_SECURE must be "true" in production');
       }
-      if (!data.DATABASE_URL) {
-        ctx.addIssue('DATABASE_URL is required in production');
-      }
     }
 
     // If any Google OAuth field is set, all must be set
@@ -118,6 +128,32 @@ export const envSchema = z
     if (googleSet > 0 && googleSet < 3) {
       ctx.addIssue(
         'All Google OAuth fields (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL) must be set together',
+      );
+    }
+
+    // If any GitHub OAuth field is set, all must be set
+    const githubFields = [
+      data.GITHUB_CLIENT_ID,
+      data.GITHUB_CLIENT_SECRET,
+      data.GITHUB_CALLBACK_URL,
+    ];
+    const githubSet = githubFields.filter(Boolean).length;
+    if (githubSet > 0 && githubSet < 3) {
+      ctx.addIssue(
+        'All GitHub OAuth fields (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_CALLBACK_URL) must be set together',
+      );
+    }
+
+    // If any LinkedIn OAuth field is set, all must be set
+    const linkedinFields = [
+      data.LINKEDIN_CLIENT_ID,
+      data.LINKEDIN_CLIENT_SECRET,
+      data.LINKEDIN_CALLBACK_URL,
+    ];
+    const linkedinSet = linkedinFields.filter(Boolean).length;
+    if (linkedinSet > 0 && linkedinSet < 3) {
+      ctx.addIssue(
+        'All LinkedIn OAuth fields (LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_CALLBACK_URL) must be set together',
       );
     }
 

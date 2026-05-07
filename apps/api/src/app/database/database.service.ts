@@ -1,33 +1,34 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class DatabaseService {
+export class DatabaseService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(DatabaseService.name);
-  private connected = false;
 
-  constructor(private readonly config: ConfigService) {}
-
-  async connect(): Promise<void> {
-    const url = this.config.get<string>('DATABASE_URL');
-    if (!url) {
-      this.logger.warn(
-        'DATABASE_URL is not set — running without a database (in-memory store).',
-      );
-      return;
-    }
-    // TODO: replace with Prisma/TypeORM/Drizzle/etc.
-    this.connected = true;
-    this.logger.log(`Connected to database`);
+  constructor() {
+    super({
+      log:
+        process.env['NODE_ENV'] === 'development'
+          ? ['query', 'warn', 'error']
+          : ['error'],
+    });
   }
 
-  async disconnect(): Promise<void> {
-    if (!this.connected) return;
-    this.connected = false;
+  async onModuleInit() {
+    await this.$connect();
+    this.logger.log('Connected to database');
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
     this.logger.log('Disconnected from database');
-  }
-
-  isConnected() {
-    return this.connected;
   }
 }

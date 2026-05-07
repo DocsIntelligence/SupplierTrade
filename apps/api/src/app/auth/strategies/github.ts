@@ -2,22 +2,22 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
-import { Profile, Strategy } from 'passport-google-oauth20';
+import { Profile, Strategy } from 'passport-github2';
 import { UsersService } from '../../users/users.service';
 import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
-export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor(
     private readonly users: UsersService,
     private readonly db: DatabaseService,
     config: ConfigService,
   ) {
     super({
-      clientID: config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: config.getOrThrow<string>('GOOGLE_CALLBACK_URL'),
-      scope: ['email', 'profile'],
+      clientID: config.getOrThrow<string>('GITHUB_CLIENT_ID'),
+      clientSecret: config.getOrThrow<string>('GITHUB_CLIENT_SECRET'),
+      callbackURL: config.getOrThrow<string>('GITHUB_CALLBACK_URL'),
+      scope: ['user:email'],
       passReqToCallback: true,
     });
   }
@@ -34,13 +34,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       const email = emails?.[0]?.value?.toLowerCase();
       const picture = photos?.[0]?.value;
 
-      if (!email) throw new BadRequestException('No email from Google');
+      if (!email) throw new BadRequestException('No email from GitHub');
 
       // Check if identity already exists
       const existing = await this.db.userIdentity.findUnique({
         where: {
           provider_providerAccountId: {
-            provider: 'google',
+            provider: 'github',
             providerAccountId,
           },
         },
@@ -58,7 +58,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         await this.db.userIdentity.create({
           data: {
             userId: byEmail.id,
-            provider: 'google',
+            provider: 'github',
             providerAccountId,
             email,
           },
@@ -68,18 +68,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       // Create new user
-      const username = email.split('@')[0];
+      const username = profile.username ?? email.split('@')[0];
       const user = await this.db.user.create({
         data: {
           name: displayName ?? username,
           email,
           username: `${username}-${Date.now().toString(36)}`,
           picture,
-          provider: 'google',
+          provider: 'github',
           emailVerified: true,
           secrets: { create: {} },
           identities: {
-            create: { provider: 'google', providerAccountId, email },
+            create: { provider: 'github', providerAccountId, email },
           },
         },
       });

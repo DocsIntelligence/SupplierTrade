@@ -2,22 +2,22 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
-import { Profile, Strategy } from 'passport-google-oauth20';
+import { Profile, Strategy } from 'passport-linkedin-oauth2';
 import { UsersService } from '../../users/users.service';
 import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
-export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
   constructor(
     private readonly users: UsersService,
     private readonly db: DatabaseService,
     config: ConfigService,
   ) {
     super({
-      clientID: config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: config.getOrThrow<string>('GOOGLE_CALLBACK_URL'),
-      scope: ['email', 'profile'],
+      clientID: config.getOrThrow<string>('LINKEDIN_CLIENT_ID'),
+      clientSecret: config.getOrThrow<string>('LINKEDIN_CLIENT_SECRET'),
+      callbackURL: config.getOrThrow<string>('LINKEDIN_CALLBACK_URL'),
+      scope: ['openid', 'profile', 'email'],
       passReqToCallback: true,
     });
   }
@@ -34,13 +34,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       const email = emails?.[0]?.value?.toLowerCase();
       const picture = photos?.[0]?.value;
 
-      if (!email) throw new BadRequestException('No email from Google');
+      if (!email) throw new BadRequestException('No email from LinkedIn');
 
-      // Check if identity already exists
       const existing = await this.db.userIdentity.findUnique({
         where: {
           provider_providerAccountId: {
-            provider: 'google',
+            provider: 'linkedin',
             providerAccountId,
           },
         },
@@ -52,13 +51,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return;
       }
 
-      // Check if user with this email exists (link flow)
       const byEmail = await this.db.user.findUnique({ where: { email } });
       if (byEmail) {
         await this.db.userIdentity.create({
           data: {
             userId: byEmail.id,
-            provider: 'google',
+            provider: 'linkedin',
             providerAccountId,
             email,
           },
@@ -67,7 +65,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return;
       }
 
-      // Create new user
       const username = email.split('@')[0];
       const user = await this.db.user.create({
         data: {
@@ -75,11 +72,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           email,
           username: `${username}-${Date.now().toString(36)}`,
           picture,
-          provider: 'google',
+          provider: 'linkedin',
           emailVerified: true,
           secrets: { create: {} },
           identities: {
-            create: { provider: 'google', providerAccountId, email },
+            create: { provider: 'linkedin', providerAccountId, email },
           },
         },
       });

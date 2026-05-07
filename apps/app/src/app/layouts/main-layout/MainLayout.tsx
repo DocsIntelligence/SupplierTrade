@@ -31,6 +31,12 @@ export function MainLayout() {
                 {user?.email}
               </span>
             </div>
+            <Link
+              to="/settings"
+              className="text-sm text-foreground/70 hover:text-foreground"
+            >
+              Settings
+            </Link>
             <Button variant="ghost" size="sm" onClick={onLogout}>
               Logout
             </Button>

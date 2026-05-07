@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
-  Get,
   Req,
   Res,
   UseGuards,
@@ -31,6 +33,10 @@ import { ResetPasswordDto } from './dto/reset-password';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshJwtGuard } from './guards/refresh-jwt.guard';
+import { GitHubAuthGuard } from './guards/github-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
+import { PasskeyService } from './passkey.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -43,6 +49,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService,
+    private readonly passkeyService: PasskeyService,
   ) {
     this.cookieDomain = this.config.get<string>('COOKIE_DOMAIN', 'localhost');
     this.cookieSecure =
@@ -53,6 +60,35 @@ export class AuthController {
     this.refreshTtlMs = this.parseTtlToMs(
       this.config.get<string>('REFRESH_TOKEN_TTL', '7d'),
     );
+  }
+
+  @Public()
+  @Get('providers')
+  @ApiOperation({ summary: 'Get available auth providers' })
+  @ApiResponse({ status: 200, description: 'List of enabled auth providers' })
+  getProviders() {
+    const providers: string[] = ['email'];
+
+    if (
+      this.config.get('GOOGLE_CLIENT_ID') &&
+      this.config.get('GOOGLE_CLIENT_SECRET')
+    ) {
+      providers.push('google');
+    }
+    if (
+      this.config.get('GITHUB_CLIENT_ID') &&
+      this.config.get('GITHUB_CLIENT_SECRET')
+    ) {
+      providers.push('github');
+    }
+    if (
+      this.config.get('LINKEDIN_CLIENT_ID') &&
+      this.config.get('LINKEDIN_CLIENT_SECRET')
+    ) {
+      providers.push('linkedin');
+    }
+
+    return { providers };
   }
 
   @Public()
@@ -180,6 +216,212 @@ export class AuthController {
       currentPassword: body.currentPassword,
       newPassword: body.newPassword,
     });
+  }
+
+  // ─── OAuth: GitHub ────────────────────────────────────────────
+
+  @Public()
+  @Get('github')
+  @UseGuards(GitHubAuthGuard)
+  @ApiOperation({
+    summary: 'Initiate GitHub OAuth',
+    description:
+      'Redirects to GitHub for authorization. After user approves, GitHub redirects back to /auth/github/callback.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to GitHub OAuth consent screen',
+  })
+  githubLogin() {
+    return;
+  }
+
+  @Public()
+  @Get('github/callback')
+  @UseGuards(GitHubAuthGuard)
+  @ApiOperation({
+    summary: 'GitHub OAuth callback',
+    description:
+      'Called by GitHub after authorization. Sets auth cookies and redirects to PUBLIC_URL/auth/callback?status=authenticated&method=github',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Sets cookies, redirects to frontend callback page',
+  })
+  @ApiResponse({ status: 401, description: 'GitHub authorization failed' })
+  async githubCallback(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const result = await this.authService.login(user);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    const redirectUrl = this.config.get<string>(
+      'PUBLIC_URL',
+      'http://localhost:4200',
+    );
+    res.redirect(
+      `${redirectUrl}/auth/callback?status=authenticated&method=github`,
+    );
+  }
+
+  // ─── OAuth: Google ────────────────────────────────────────────
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({
+    summary: 'Initiate Google OAuth',
+    description:
+      'Redirects to Google for authorization. After user approves, Google redirects back to /auth/google/callback.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to Google OAuth consent screen',
+  })
+  googleLogin() {
+    return;
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({
+    summary: 'Google OAuth callback',
+    description:
+      'Called by Google after authorization. Sets auth cookies and redirects to PUBLIC_URL/auth/callback?status=authenticated&method=google',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Sets cookies, redirects to frontend callback page',
+  })
+  @ApiResponse({ status: 401, description: 'Google authorization failed' })
+  async googleCallback(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const result = await this.authService.login(user);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    const redirectUrl = this.config.get<string>(
+      'PUBLIC_URL',
+      'http://localhost:4200',
+    );
+    res.redirect(
+      `${redirectUrl}/auth/callback?status=authenticated&method=google`,
+    );
+  }
+
+  // ─── OAuth: LinkedIn ──────────────────────────────────────────
+
+  @Public()
+  @Get('linkedin')
+  @UseGuards(LinkedInAuthGuard)
+  @ApiOperation({
+    summary: 'Initiate LinkedIn OAuth',
+    description:
+      'Redirects to LinkedIn for authorization. After user approves, LinkedIn redirects back to /auth/linkedin/callback.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to LinkedIn OAuth consent screen',
+  })
+  linkedinLogin() {
+    return;
+  }
+
+  @Public()
+  @Get('linkedin/callback')
+  @UseGuards(LinkedInAuthGuard)
+  @ApiOperation({
+    summary: 'LinkedIn OAuth callback',
+    description:
+      'Called by LinkedIn after authorization. Sets auth cookies and redirects to PUBLIC_URL/auth/callback?status=authenticated&method=linkedin',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Sets cookies, redirects to frontend callback page',
+  })
+  @ApiResponse({ status: 401, description: 'LinkedIn authorization failed' })
+  async linkedinCallback(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const result = await this.authService.login(user);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    const redirectUrl = this.config.get<string>(
+      'PUBLIC_URL',
+      'http://localhost:4200',
+    );
+    res.redirect(
+      `${redirectUrl}/auth/callback?status=authenticated&method=linkedin`,
+    );
+  }
+
+  // ─── Passkeys ─────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('passkey/register/options')
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Get passkey registration options' })
+  passkeyRegisterOptions(@CurrentUser() user: User) {
+    return this.passkeyService.generateRegistrationOptions(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('passkey/register/verify')
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Verify passkey registration' })
+  passkeyRegisterVerify(
+    @CurrentUser() user: User,
+    @Body() body: { credential: any; label?: string },
+  ) {
+    return this.passkeyService.verifyRegistrationAndSave(
+      user.id,
+      body.credential,
+      body.label,
+    );
+  }
+
+  @Public()
+  @Post('passkey/login/options')
+  @ApiOperation({ summary: 'Get passkey login options' })
+  passkeyLoginOptions(@Body() body: { email?: string }) {
+    return this.passkeyService.generateAuthenticationOptions(body.email);
+  }
+
+  @Public()
+  @Post('passkey/login/verify')
+  @ApiOperation({ summary: 'Verify passkey login' })
+  async passkeyLoginVerify(
+    @Body() body: { credential: any; challengeKey: string },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponse> {
+    const user = await this.passkeyService.verifyAuthenticationAndLogin(
+      body.credential,
+      body.challengeKey,
+    );
+    const result = await this.authService.login(user);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('passkeys')
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'List user passkeys' })
+  listPasskeys(@CurrentUser() user: User) {
+    return this.passkeyService.listForUser(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('passkey/:id')
+  @ApiBearerAuth('bearer')
+  @ApiCookieAuth('access_token')
+  @ApiOperation({ summary: 'Delete a passkey' })
+  deletePasskey(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.passkeyService.deleteForUser(user.id, id);
   }
 
   // ─── Cookie helpers ───────────────────────────────────────────────────

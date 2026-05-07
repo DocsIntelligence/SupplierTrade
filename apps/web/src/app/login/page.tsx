@@ -8,12 +8,15 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Button, Card, FormField, Input } from '@org/ui';
+import { Button, Card, FormField, Input, OAuthButtons } from '@org/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+
+const API_BASE_URL =
+  process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000/api';
 
 function LoginForm() {
   const dispatch = useAppDispatch();
@@ -75,6 +78,19 @@ function LoginForm() {
         >
           Sign in
         </Button>
+
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-background px-2 text-foreground/60">
+              or continue with
+            </span>
+          </div>
+        </div>
+
+        <OAuthButtons apiUrl={API_BASE_URL} />
 
         <div className="text-sm flex items-center justify-between pt-2">
           <Link

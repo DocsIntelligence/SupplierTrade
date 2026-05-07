@@ -62,3 +62,7 @@ vitest.config.*.timestamp*
 .env.*.local
 apps/**/.env
 apps/**/.env.local
+
+# Prisma
+tools/prisma/dev.db
+tools/prisma/dev.db-journal

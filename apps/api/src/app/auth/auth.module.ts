@@ -1,33 +1,112 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
+import { DatabaseService } from '../database/database.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PasskeyService } from './passkey.service';
+import { UserIdentityController } from './user-identity.controller';
+import { UserIdentityService } from './user-identity.service';
+import { GitHubAuthGuard } from './guards/github-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshJwtGuard } from './guards/refresh-jwt.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { GitHubStrategy } from './strategies/github';
 import { GoogleStrategy } from './strategies/google';
 import { JwtStrategy } from './strategies/jwt';
+import { LinkedInStrategy } from './strategies/linkedin';
 import { LocalStrategy } from './strategies/local';
 import { RefreshJwtStrategy } from './strategies/refresh-jwt';
+import { UsersService } from '../users/users.service';
+
+const logger = new Logger('AuthModule');
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule, MailModule],
-  controllers: [AuthController],
+  controllers: [AuthController, UserIdentityController],
   providers: [
     AuthService,
+    PasskeyService,
+    UserIdentityService,
     JwtStrategy,
     RefreshJwtStrategy,
     LocalStrategy,
-    GoogleStrategy,
     JwtAuthGuard,
     LocalAuthGuard,
     RefreshJwtGuard,
+    GoogleAuthGuard,
+    GitHubAuthGuard,
+    LinkedInAuthGuard,
     RolesGuard,
+
+    // OAuth strategies — only registered if env vars are configured
+    {
+      provide: GoogleStrategy,
+      inject: [UsersService, DatabaseService, ConfigService],
+      useFactory: (
+        users: UsersService,
+        db: DatabaseService,
+        config: ConfigService,
+      ) => {
+        if (
+          config.get('GOOGLE_CLIENT_ID') &&
+          config.get('GOOGLE_CLIENT_SECRET')
+        ) {
+          return new GoogleStrategy(users, db, config);
+        }
+        logger.warn(
+          'Google OAuth not configured — GOOGLE_CLIENT_ID/SECRET missing',
+        );
+        return null;
+      },
+    },
+    {
+      provide: GitHubStrategy,
+      inject: [UsersService, DatabaseService, ConfigService],
+      useFactory: (
+        users: UsersService,
+        db: DatabaseService,
+        config: ConfigService,
+      ) => {
+        if (
+          config.get('GITHUB_CLIENT_ID') &&
+          config.get('GITHUB_CLIENT_SECRET')
+        ) {
+          return new GitHubStrategy(users, db, config);
+        }
+        logger.warn(
+          'GitHub OAuth not configured — GITHUB_CLIENT_ID/SECRET missing',
+        );
+        return null;
+      },
+    },
+    {
+      provide: LinkedInStrategy,
+      inject: [UsersService, DatabaseService, ConfigService],
+      useFactory: (
+        users: UsersService,
+        db: DatabaseService,
+        config: ConfigService,
+      ) => {
+        if (
+          config.get('LINKEDIN_CLIENT_ID') &&
+          config.get('LINKEDIN_CLIENT_SECRET')
+        ) {
+          return new LinkedInStrategy(users, db, config);
+        }
+        logger.warn(
+          'LinkedIn OAuth not configured — LINKEDIN_CLIENT_ID/SECRET missing',
+        );
+        return null;
+      },
+    },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, UserIdentityService],
 })
 export class AuthModule {}

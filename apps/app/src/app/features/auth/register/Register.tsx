@@ -6,10 +6,13 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Button, FormField, Input } from '@org/ui';
+import { Button, FormField, Input, OAuthButtons } from '@org/ui';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 
 export function Register() {
   const dispatch = useAppDispatch();
@@ -77,6 +80,19 @@ export function Register() {
       <Button type="submit" isLoading={status === 'pending'} className="w-full">
         Sign up
       </Button>
+
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-foreground/60">
+            or continue with
+          </span>
+        </div>
+      </div>
+
+      <OAuthButtons apiUrl={API_BASE_URL} />
 
       <p className="text-sm text-center text-gray-600 pt-2">
         Already have an account?{' '}

@@ -1,9 +1,4 @@
-import {
-  Global,
-  Module,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 
 @Global()
@@ -11,12 +6,4 @@ import { DatabaseService } from './database.service';
   providers: [DatabaseService],
   exports: [DatabaseService],
 })
-export class DatabaseModule implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly db: DatabaseService) {}
-  async onModuleInit() {
-    await this.db.connect();
-  }
-  async onModuleDestroy() {
-    await this.db.disconnect();
-  }
-}
+export class DatabaseModule {}

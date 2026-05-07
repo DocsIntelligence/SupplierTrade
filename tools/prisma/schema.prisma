@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums (SQLite doesn't support enums, use String fields) ───
+
+// Provider: "email" | "google" | "github" | "linkedin"
+// Role: "user" | "admin"
+
+// ─── User ──────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  username      String    @unique
+  picture       String?
+  provider      String    @default("email")
+  role          String    @default("user")
+  emailVerified Boolean   @default(false)
+  locale        String    @default("en-US")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  secrets       Secrets?
+  identities    UserIdentity[]
+  passkeys      Passkey[]
+}
+
+// ─── Secrets (1:1 with User) ───────────────────────────────────
+
+model Secrets {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  password          String?
+  refreshToken      String?
+  resetToken        String?
+  verificationToken String?
+  lastSignedIn      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── OAuth Identities ──────────────────────────────────────────
+
+model UserIdentity {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  email             String?
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+}
+
+// ─── Passkeys (WebAuthn) ───────────────────────────────────────
+
+model Passkey {
+  id           String   @id @default(cuid())
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      BigInt   @default(0)
+  deviceType   String?
+  backedUp     Boolean  @default(false)
+  transports   String   @default("[]")
+  label        String?
+  userId       String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Challenge Store (for WebAuthn) ────────────────────────────
+
+model Challenge {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

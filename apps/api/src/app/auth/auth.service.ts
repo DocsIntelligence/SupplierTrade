@@ -40,7 +40,10 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
-  async validateUser(identifier: string, password: string): Promise<User | null> {
+  async validateUser(
+    identifier: string,
+    password: string,
+  ): Promise<User | null> {
     const entity = await this.users.findByIdentifier(identifier);
     if (!entity?.password) return null;
     const ok = await bcrypt.compare(password, entity.password);
@@ -79,9 +82,10 @@ export class AuthService {
   async changePassword(userId: string, payload: ChangePasswordDto) {
     const entity = await this.users.findByIdWithSecrets(userId);
     if (!entity) throw new NotFoundException(ErrorMessage.UserNotFound);
+    const currentPassword = entity.secrets?.password;
     if (
-      !entity.password ||
-      !(await bcrypt.compare(payload.currentPassword, entity.password))
+      !currentPassword ||
+      !(await bcrypt.compare(payload.currentPassword, currentPassword))
     ) {
       throw new UnauthorizedException(ErrorMessage.InvalidCredentials);
     }
@@ -95,8 +99,14 @@ export class AuthService {
       email: user.email,
       role: user.role,
     };
-    const accessTtl = this.config.get<string>('ACCESS_TOKEN_TTL', '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`;
-    const refreshTtl = this.config.get<string>('REFRESH_TOKEN_TTL', '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`;
+    const accessTtl = this.config.get<string>(
+      'ACCESS_TOKEN_TTL',
+      '15m',
+    ) as `${number}${'s' | 'm' | 'h' | 'd'}`;
+    const refreshTtl = this.config.get<string>(
+      'REFRESH_TOKEN_TTL',
+      '7d',
+    ) as `${number}${'s' | 'm' | 'h' | 'd'}`;
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {
         secret: this.config.getOrThrow<string>('ACCESS_TOKEN_SECRET'),
