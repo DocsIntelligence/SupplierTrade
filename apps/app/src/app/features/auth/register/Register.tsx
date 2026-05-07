@@ -45,14 +45,14 @@ export function Register() {
         <FormField label="Name" error={errors.name?.message}>
           <Input
             placeholder="John Doe"
-            invalid={!!errors.name}
+            hasError={!!errors.name}
             {...hookRegister('name')}
           />
         </FormField>
         <FormField label="Username" error={errors.username?.message}>
           <Input
             placeholder="johndoe"
-            invalid={!!errors.username}
+            hasError={!!errors.username}
             {...hookRegister('username')}
           />
         </FormField>
@@ -60,7 +60,7 @@ export function Register() {
           <Input
             type="email"
             placeholder="you@example.com"
-            invalid={!!errors.email}
+            hasError={!!errors.email}
             {...hookRegister('email')}
           />
         </FormField>
@@ -68,7 +68,7 @@ export function Register() {
           <Input
             type="password"
             placeholder="••••••••"
-            invalid={!!errors.password}
+            hasError={!!errors.password}
             {...hookRegister('password')}
           />
         </FormField>

@@ -7,7 +7,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Avatar, Button, Card } from '@org/ui';
+import { UserAvatar as Avatar, Button, Card } from '@org/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         </div>
 
         {user && (
-          <Card padding="lg" className="rounded-xl">
+          <Card className="rounded-xl p-8">
             <div className="flex items-center gap-4">
               <Avatar name={user.name} size="lg" />
               <div>

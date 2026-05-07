@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
           <p className="text-sm text-gray-500 mt-1">Password recovery</p>
         </div>
 
-        <Card padding="lg" className="rounded-xl">
+        <Card className="rounded-xl p-8">
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  invalid={!!errors.email}
+                  hasError={!!errors.email}
                   {...register('email')}
                 />
               </FormField>

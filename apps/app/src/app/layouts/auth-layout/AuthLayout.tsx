@@ -9,7 +9,7 @@ export function AuthLayout() {
           <h1 className="text-2xl font-bold text-gray-900">@org/app</h1>
           <p className="text-sm text-gray-500 mt-1">Welcome back</p>
         </div>
-        <Card padding="lg" className="rounded-xl">
+        <Card className="rounded-xl p-8">
           <Outlet />
         </Card>
       </div>

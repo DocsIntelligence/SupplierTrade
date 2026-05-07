@@ -50,7 +50,7 @@ export function ResetPassword() {
           <Input
             type="password"
             placeholder="••••••••"
-            invalid={!!errors.password}
+            hasError={!!errors.password}
             {...register('password')}
           />
         </FormField>

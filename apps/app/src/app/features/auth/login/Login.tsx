@@ -49,7 +49,7 @@ export function Login() {
         <FormField label="Email or username" error={errors.identifier?.message}>
           <Input
             placeholder="you@example.com"
-            invalid={!!errors.identifier}
+            hasError={!!errors.identifier}
             {...register('identifier')}
           />
         </FormField>
@@ -57,7 +57,7 @@ export function Login() {
           <Input
             type="password"
             placeholder="••••••••"
-            invalid={!!errors.password}
+            hasError={!!errors.password}
             {...register('password')}
           />
         </FormField>

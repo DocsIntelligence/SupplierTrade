@@ -1,6 +1,5 @@
 //@ts-check
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
 
 /**
@@ -8,6 +7,16 @@ const { composePlugins, withNx } = require('@nx/next');
  **/
 const nextConfig = {
   nx: {},
+
+  // Transpile workspace libs so Next.js compiles them from source
+  transpilePackages: [
+    '@org/dto',
+    '@org/utils',
+    '@org/api-client',
+    '@org/ui',
+    '@org/hooks',
+    '@org/store',
+  ],
 
   // Dev server port — avoids conflict with API (3000) and React app (4200)
   devIndicators: false,

@@ -1,5 +1,5 @@
 import { selectUser, useAppSelector } from '@org/store';
-import { Avatar, Card } from '@org/ui';
+import { UserAvatar as Avatar, Card } from '@org/ui';
 
 export function Dashboard() {
   const user = useAppSelector(selectUser);
@@ -11,7 +11,7 @@ export function Dashboard() {
         <p className="text-gray-500 mt-1">Welcome back, {user?.name}</p>
       </div>
 
-      <Card padding="lg" className="rounded-xl">
+      <Card className="rounded-xl p-8">
         <div className="flex items-center gap-4">
           <Avatar name={user?.name} size="lg" />
           <div>

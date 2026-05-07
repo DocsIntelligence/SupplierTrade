@@ -43,7 +43,7 @@ export default function RegisterPage() {
           <p className="text-sm text-gray-500 mt-1">Get started</p>
         </div>
 
-        <Card padding="lg" className="rounded-xl">
+        <Card className="rounded-xl p-8">
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
@@ -58,14 +58,14 @@ export default function RegisterPage() {
               <FormField label="Name" error={errors.name?.message}>
                 <Input
                   placeholder="John Doe"
-                  invalid={!!errors.name}
+                  hasError={!!errors.name}
                   {...hookRegister('name')}
                 />
               </FormField>
               <FormField label="Username" error={errors.username?.message}>
                 <Input
                   placeholder="johndoe"
-                  invalid={!!errors.username}
+                  hasError={!!errors.username}
                   {...hookRegister('username')}
                 />
               </FormField>
@@ -73,7 +73,7 @@ export default function RegisterPage() {
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  invalid={!!errors.email}
+                  hasError={!!errors.email}
                   {...hookRegister('email')}
                 />
               </FormField>
@@ -81,7 +81,7 @@ export default function RegisterPage() {
                 <Input
                   type="password"
                   placeholder="••••••••"
-                  invalid={!!errors.password}
+                  hasError={!!errors.password}
                   {...hookRegister('password')}
                 />
               </FormField>

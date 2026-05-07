@@ -20,7 +20,7 @@ export default defineConfig(() => ({
   },
   plugins: [react(), tailwindcss(), nxViteTsPaths()],
   build: {
-    outDir: './dist',
+    outDir: '../../dist/apps/app',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {

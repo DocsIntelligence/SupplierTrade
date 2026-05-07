@@ -40,7 +40,7 @@ export function ForgotPassword() {
           <Input
             type="email"
             placeholder="you@example.com"
-            invalid={!!errors.email}
+            hasError={!!errors.email}
             {...register('email')}
           />
         </FormField>

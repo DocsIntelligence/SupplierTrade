@@ -6,7 +6,17 @@
     "dev": "nx run-many -t serve --projects=api,app,web",
     "dev:api": "nx run api:serve",
     "dev:app": "nx run app:serve",
-    "dev:web": "nx run web:dev"
+    "dev:web": "nx run web:dev",
+    "build": "NODE_ENV=production nx run-many -t build --projects=api,app,web --parallel=2",
+    "start": "node dist/apps/api/main.js",
+    "start:web": "next start dist/apps/web",
+    "lint": "nx run-many -t lint",
+    "lint:fix": " nx run-many -t lint --fix",
+    "format:check": " pnpm exec prettier -c --log-level error .",
+    "format:write": " pnpm exec prettier -w --log-level error .",
+    "reset": "nx reset",
+    "update": "nx migrate latest",
+    "graph": "nx graph"
   },
   "private": true,
   "devDependencies": {

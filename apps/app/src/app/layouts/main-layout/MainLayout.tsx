@@ -4,7 +4,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
-import { Avatar, Button } from '@org/ui';
+import { UserAvatar as Avatar, Button } from '@org/ui';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 
 export function MainLayout() {
