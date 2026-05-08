@@ -15,6 +15,7 @@ import { AppLoggerModule } from './logger/logger.module';
 import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
 import { PaymentModule } from './payment/payment.module';
+import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     LookupModule,
     AiModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

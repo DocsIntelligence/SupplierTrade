@@ -81,6 +81,14 @@ export const envSchema = z.object({
   OPENAI_MODEL: z.string().min(1).optional(),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().min(1).optional(),
+
+  // ── Storage: S3-compatible (optional — warn if missing)
+  STORAGE_ENDPOINT: z.string().url().optional(),
+  STORAGE_REGION: z.string().min(1).optional(),
+  STORAGE_ACCESS_KEY: z.string().min(1).optional(),
+  STORAGE_SECRET_KEY: z.string().min(1).optional(),
+  STORAGE_BUCKET: z.string().min(1).optional(),
+  STORAGE_PUBLIC_URL: z.string().url().optional(), // Public URL prefix for files
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -124,6 +132,15 @@ const OPTIONAL_GROUPS = [
   { name: 'Redis (Queue)', fields: ['REDIS_URL'] },
   { name: 'OpenAI', fields: ['OPENAI_API_KEY'] },
   { name: 'Gemini', fields: ['GEMINI_API_KEY'] },
+  {
+    name: 'Storage (S3)',
+    fields: [
+      'STORAGE_ENDPOINT',
+      'STORAGE_ACCESS_KEY',
+      'STORAGE_SECRET_KEY',
+      'STORAGE_BUCKET',
+    ],
+  },
 ] as const;
 
 export const validateEnv = (env: Record<string, unknown>): AppConfig => {
