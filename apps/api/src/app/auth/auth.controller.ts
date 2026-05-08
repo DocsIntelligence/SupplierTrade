@@ -20,6 +20,15 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from '@org/dto';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import type { AuthResponse, MessageResponse, User } from '@org/dto';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -30,7 +39,6 @@ import { ForgotPasswordDto } from './dto/forgot-password';
 import { LoginDto } from './dto/login';
 import { RegisterDto } from './dto/register';
 import { ResetPasswordDto } from './dto/reset-password';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshJwtGuard } from './guards/refresh-jwt.guard';
 import { GitHubAuthGuard } from './guards/github-auth.guard';
@@ -92,6 +100,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterDto })
@@ -104,7 +113,7 @@ export class AuthController {
     description: 'Validation error or user already exists',
   })
   async register(
-    @Body() body: RegisterDto,
+    @Body(new ZodValidationPipe(registerSchema)) body: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
     const result = await this.authService.register(body);
@@ -113,6 +122,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -126,7 +136,7 @@ export class AuthController {
   async login(
     @Req() _req: Request,
     @CurrentUser() user: User,
-    @Body() _body: LoginDto,
+    @Body(new ZodValidationPipe(loginSchema)) _body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
     const result = await this.authService.login(user);
@@ -150,7 +160,6 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
   @ApiOperation({ summary: 'Logout and clear auth cookies' })
   @ApiBearerAuth('bearer')
@@ -164,7 +173,6 @@ export class AuthController {
     return this.authService.logout();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({ summary: 'Get current authenticated user' })
   @ApiBearerAuth('bearer')
@@ -176,6 +184,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request a password reset email' })
   @ApiBody({ type: ForgotPasswordDto })
@@ -183,24 +192,31 @@ export class AuthController {
     status: 201,
     description: 'Reset email sent (if account exists)',
   })
-  forgot(@Body() body: ForgotPasswordDto): Promise<MessageResponse> {
+  forgot(
+    @Body(new ZodValidationPipe(forgotPasswordSchema))
+    body: ForgotPasswordDto,
+  ): Promise<MessageResponse> {
     return this.authService.forgotPassword(body);
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password using token from email' })
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({ status: 201, description: 'Password updated' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  reset(@Body() body: ResetPasswordDto): Promise<MessageResponse> {
+  reset(
+    @Body(new ZodValidationPipe(resetPasswordSchema))
+    body: ResetPasswordDto,
+  ): Promise<MessageResponse> {
     return this.authService.resetPassword({
       token: body.token,
       password: body.password,
     });
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('change-password')
   @ApiOperation({ summary: 'Change password (requires current password)' })
   @ApiBearerAuth('bearer')
@@ -210,7 +226,8 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Current password incorrect' })
   change(
     @CurrentUser() user: User,
-    @Body() body: ChangePasswordDto,
+    @Body(new ZodValidationPipe(changePasswordSchema))
+    body: ChangePasswordDto,
   ): Promise<MessageResponse> {
     return this.authService.changePassword(user.id, {
       currentPassword: body.currentPassword,
@@ -256,7 +273,7 @@ export class AuthController {
     const result = await this.authService.login(user);
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     const redirectUrl = this.config.get<string>(
-      'PUBLIC_URL',
+      'FRONTEND_URL',
       'http://localhost:4200',
     );
     res.redirect(
@@ -302,7 +319,7 @@ export class AuthController {
     const result = await this.authService.login(user);
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     const redirectUrl = this.config.get<string>(
-      'PUBLIC_URL',
+      'FRONTEND_URL',
       'http://localhost:4200',
     );
     res.redirect(
@@ -348,7 +365,7 @@ export class AuthController {
     const result = await this.authService.login(user);
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     const redirectUrl = this.config.get<string>(
-      'PUBLIC_URL',
+      'FRONTEND_URL',
       'http://localhost:4200',
     );
     res.redirect(
@@ -358,7 +375,6 @@ export class AuthController {
 
   // ─── Passkeys ─────────────────────────────────────────────────
 
-  @UseGuards(JwtAuthGuard)
   @Post('passkey/register/options')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
@@ -367,23 +383,23 @@ export class AuthController {
     return this.passkeyService.generateRegistrationOptions(user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('passkey/register/verify')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
   @ApiOperation({ summary: 'Verify passkey registration' })
   passkeyRegisterVerify(
     @CurrentUser() user: User,
-    @Body() body: { credential: any; label?: string },
+    @Body() body: { credential: unknown; label?: string },
   ) {
     return this.passkeyService.verifyRegistrationAndSave(
       user.id,
-      body.credential,
+      body.credential as never,
       body.label,
     );
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('passkey/login/options')
   @ApiOperation({ summary: 'Get passkey login options' })
   passkeyLoginOptions(@Body() body: { email?: string }) {
@@ -391,14 +407,15 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('passkey/login/verify')
   @ApiOperation({ summary: 'Verify passkey login' })
   async passkeyLoginVerify(
-    @Body() body: { credential: any; challengeKey: string },
+    @Body() body: { credential: unknown; challengeKey: string },
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponse> {
     const user = await this.passkeyService.verifyAuthenticationAndLogin(
-      body.credential,
+      body.credential as never,
       body.challengeKey,
     );
     const result = await this.authService.login(user);
@@ -406,7 +423,6 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('passkeys')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
@@ -415,7 +431,6 @@ export class AuthController {
     return this.passkeyService.listForUser(user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete('passkey/:id')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')

@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -7,14 +7,12 @@ import {
 } from '@nestjs/swagger';
 import type { User } from '@org/dto';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserIdentityService } from './user-identity.service';
 
 @ApiTags('identities')
 @ApiBearerAuth('bearer')
 @ApiCookieAuth('access_token')
 @Controller('user/identities')
-@UseGuards(JwtAuthGuard)
 export class UserIdentityController {
   constructor(private readonly identityService: UserIdentityService) {}
 

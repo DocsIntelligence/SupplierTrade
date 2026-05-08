@@ -16,7 +16,6 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { LookupService } from './lookup.service';
 
@@ -42,7 +41,7 @@ export class LookupController {
   // ─── Admin endpoints ──────────────────────────────────────────
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
@@ -60,7 +59,7 @@ export class LookupController {
   }
 
   @Post(':groupId/values')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
@@ -73,7 +72,7 @@ export class LookupController {
   }
 
   @Patch('values/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
@@ -92,7 +91,7 @@ export class LookupController {
   }
 
   @Delete('values/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')

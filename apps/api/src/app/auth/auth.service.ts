@@ -36,7 +36,9 @@ export class AuthService {
   async register(payload: RegisterDto): Promise<AuthResponse> {
     const user = await this.users.create(payload);
     this.logger.log(`Registered new user ${user.email}`);
-    await this.mail.sendVerificationEmail(user.email, randomUUID());
+    const verificationToken = randomUUID();
+    await this.users.setVerificationToken(user.id, verificationToken);
+    await this.mail.sendVerificationEmail(user.email, verificationToken);
     return this.issueTokens(user);
   }
 

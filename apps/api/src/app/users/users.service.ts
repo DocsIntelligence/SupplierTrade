@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { RegisterDto, User } from '@org/dto';
 import { ErrorMessage } from '@org/utils';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { DatabaseService } from '../database/database.service';
 
@@ -16,36 +17,38 @@ export class UsersService {
   constructor(private readonly db: DatabaseService) {}
 
   async create(payload: RegisterDto): Promise<User> {
-    const existing = await this.db.user.findFirst({
-      where: { OR: [{ email: payload.email }, { username: payload.username }] },
-    });
-    if (existing) {
-      throw new ConflictException(
-        existing.email === payload.email
-          ? 'Email already in use'
-          : 'Username already taken',
-      );
-    }
-
     const hashedPassword = await bcrypt.hash(payload.password, 10);
-    const user = await this.db.user.create({
-      data: {
-        name: payload.name,
-        email: payload.email,
-        username: payload.username,
-        provider: 'email',
-        locale: payload.locale ?? 'en-US',
-        secrets: {
-          create: {
-            password: hashedPassword,
-          },
+    try {
+      const user = await this.db.user.create({
+        data: {
+          name: payload.name,
+          email: payload.email,
+          username: payload.username,
+          provider: 'email',
+          locale: payload.locale ?? 'en-US',
+          secrets: { create: { password: hashedPassword } },
         },
-      },
-      include: { secrets: true },
-    });
-
-    this.logger.log(`Created user ${user.email}`);
-    return this.toPublic(user);
+        include: { secrets: true },
+      });
+      this.logger.log(`Created user ${user.email}`);
+      return this.toPublic(user);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        // Race-safe: target column tells us which unique constraint fired.
+        const target = (err.meta?.target as string[] | undefined) ?? [];
+        if (target.includes('email')) {
+          throw new ConflictException('Email already in use');
+        }
+        if (target.includes('username')) {
+          throw new ConflictException('Username already taken');
+        }
+        throw new ConflictException('User already exists');
+      }
+      throw err;
+    }
   }
 
   async findById(id: string): Promise<User> {
@@ -83,18 +86,34 @@ export class UsersService {
 
   async findByResetToken(token: string) {
     const secrets = await this.db.secrets.findFirst({
-      where: { resetToken: token },
+      where: {
+        resetToken: token,
+        resetTokenExpiresAt: { gt: new Date() },
+      },
       include: { user: true },
     });
     if (!secrets) return null;
     return { ...secrets.user, secrets };
   }
 
-  async setResetToken(id: string, token: string) {
+  async setResetToken(id: string, token: string, ttlMs = 30 * 60 * 1000) {
+    const expiresAt = new Date(Date.now() + ttlMs);
     await this.db.secrets.upsert({
       where: { userId: id },
-      update: { resetToken: token },
-      create: { userId: id, resetToken: token },
+      update: { resetToken: token, resetTokenExpiresAt: expiresAt },
+      create: {
+        userId: id,
+        resetToken: token,
+        resetTokenExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  async setVerificationToken(id: string, token: string) {
+    await this.db.secrets.upsert({
+      where: { userId: id },
+      update: { verificationToken: token },
+      create: { userId: id, verificationToken: token },
     });
   }
 
@@ -102,7 +121,11 @@ export class UsersService {
     const hashed = await bcrypt.hash(password, 10);
     await this.db.secrets.upsert({
       where: { userId: id },
-      update: { password: hashed, resetToken: null },
+      update: {
+        password: hashed,
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
       create: { userId: id, password: hashed },
     });
   }

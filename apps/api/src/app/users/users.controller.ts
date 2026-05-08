@@ -16,10 +16,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { User } from '@org/dto';
+import { updateUserSchema } from '@org/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -27,7 +28,7 @@ import { UsersService } from './users.service';
 @ApiBearerAuth('bearer')
 @ApiCookieAuth('access_token')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -63,7 +64,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   update(
     @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body(new ZodValidationPipe(updateUserSchema)) updateUserDto: UpdateUserDto,
   ): Promise<User> {
     return this.usersService.update(id, updateUserDto);
   }

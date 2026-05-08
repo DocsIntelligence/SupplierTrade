@@ -14,6 +14,7 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535),
   GLOBAL_PREFIX: z.string().min(1),
   PUBLIC_URL: z.string().url(),
+  FRONTEND_URL: z.string().url(),
   CORS_ORIGIN: z.string().min(1),
 
   // ── Cookies (required) ────────────────────────────────────────────────

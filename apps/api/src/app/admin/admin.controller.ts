@@ -16,14 +16,23 @@ import {
   ApiCookieAuth,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { User } from '@org/dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AdminService } from './admin.service';
 
+const parsePositiveInt = (raw: string | undefined, fallback: number, max?: number) => {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  const truncated = Math.trunc(n);
+  return max ? Math.min(truncated, max) : truncated;
+};
+
 @ApiTags('admin')
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Roles('admin')
 @ApiBearerAuth('bearer')
 @ApiCookieAuth('access_token')
@@ -40,25 +49,35 @@ export class AdminController {
   @ApiOperation({ summary: 'List all users (paginated)' })
   getUsers(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.adminService.getUsers(
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      parsePositiveInt(page, 1),
+      parsePositiveInt(limit, 20, 100),
     );
   }
 
   @Patch('users/:id/role')
   @ApiOperation({ summary: 'Update user role' })
-  updateRole(@Param('id') id: string, @Body('role') role: string) {
+  updateRole(
+    @CurrentUser() current: User,
+    @Param('id') id: string,
+    @Body('role') role: string,
+  ) {
     if (!Object.values(Role).includes(role as Role)) {
       throw new BadRequestException(
         `Invalid role. Expected one of: ${Object.values(Role).join(', ')}`,
       );
+    }
+    if (id === current.id && role !== Role.admin) {
+      throw new BadRequestException('Admins cannot demote themselves');
     }
     return this.adminService.updateUserRole(id, role as Role);
   }
 
   @Delete('users/:id')
   @ApiOperation({ summary: 'Delete a user' })
-  deleteUser(@Param('id') id: string) {
+  deleteUser(@CurrentUser() current: User, @Param('id') id: string) {
+    if (id === current.id) {
+      throw new BadRequestException('Admins cannot delete themselves');
+    }
     return this.adminService.deleteUser(id);
   }
 

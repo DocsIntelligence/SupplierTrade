@@ -6,7 +6,6 @@ import {
   Post,
   RawBodyRequest,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,9 +16,15 @@ import {
 import type { User } from '@org/dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { PlanService } from './plan.service';
 import { RazorpayService } from './razorpay.service';
+import {
+  checkoutSchema,
+  verifyPaymentSchema,
+  type CheckoutDto,
+  type VerifyPaymentDto,
+} from './payment.dto';
 
 @ApiTags('payment')
 @Controller('payment')
@@ -47,21 +52,25 @@ export class PaymentController {
   }
 
   @Post('checkout')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
   @ApiOperation({ summary: 'Create checkout order/subscription' })
-  createCheckout(@CurrentUser() user: User, @Body('planId') planId: string) {
-    return this.razorpay.createOrder(user.id, planId);
+  createCheckout(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(checkoutSchema)) body: CheckoutDto,
+  ) {
+    return this.razorpay.createOrder(user.id, body.planId);
   }
 
   @Post('verify')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
   @ApiCookieAuth('access_token')
   @ApiOperation({ summary: 'Verify payment after Razorpay success' })
-  verifyPayment(@Body() body: any) {
-    return this.razorpay.verifyPayment(body);
+  verifyPayment(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(verifyPaymentSchema)) body: VerifyPaymentDto,
+  ) {
+    return this.razorpay.verifyPayment(user.id, body);
   }
 
   @Post('webhook/razorpay')
@@ -69,10 +78,13 @@ export class PaymentController {
   @ApiOperation({ summary: 'Razorpay webhook endpoint' })
   async razorpayWebhook(
     @Req() req: RawBodyRequest<Request>,
-    @Headers('X-Razorpay-Signature') signature: string,
-    @Body() body: any,
+    @Headers('x-razorpay-signature') signature: string,
+    @Body() body: unknown,
   ) {
-    await this.razorpay.handleWebhook(signature, req.rawBody!, body);
+    if (!req.rawBody) {
+      throw new Error('Raw body unavailable — rawBody must be enabled');
+    }
+    await this.razorpay.handleWebhook(signature, req.rawBody, body);
     return { ok: true };
   }
 }
