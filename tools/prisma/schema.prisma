@@ -288,3 +288,23 @@ model LookupValue {
 
   @@unique([groupId, value])
 }
+
+// ─── Mail Queue & Logs ─────────────────────────────────────────
+
+model MailLog {
+  id          String   @id @default(cuid())
+  to          String
+  subject     String
+  template    String?
+  body        String?
+  status      String   @default("queued") // "queued" | "sent" | "failed"
+  attempts    Int      @default(0)
+  error       String?
+  metadata    Json?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}

@@ -73,6 +73,9 @@ export const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
 
+  // ── Redis (optional — for queue, falls back to in-memory)
+  REDIS_URL: z.string().min(1).optional(),
+
   // ── AI Providers (optional — warn if missing)
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
@@ -118,6 +121,7 @@ const OPTIONAL_GROUPS = [
       'STRIPE_PUBLISHABLE_KEY',
     ],
   },
+  { name: 'Redis (Queue)', fields: ['REDIS_URL'] },
   { name: 'OpenAI', fields: ['OPENAI_API_KEY'] },
   { name: 'Gemini', fields: ['GEMINI_API_KEY'] },
 ] as const;
