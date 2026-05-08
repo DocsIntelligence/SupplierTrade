@@ -72,6 +72,12 @@ export const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+
+  // ── AI Providers (optional — warn if missing)
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().min(1).optional(),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -112,6 +118,8 @@ const OPTIONAL_GROUPS = [
       'STRIPE_PUBLISHABLE_KEY',
     ],
   },
+  { name: 'OpenAI', fields: ['OPENAI_API_KEY'] },
+  { name: 'Gemini', fields: ['GEMINI_API_KEY'] },
 ] as const;
 
 export const validateEnv = (env: Record<string, unknown>): AppConfig => {
