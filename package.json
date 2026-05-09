@@ -26,7 +26,8 @@
     "seed:lookups": "tsx tools/scripts/seed-lookups.ts",
     "reset": "nx reset",
     "update": "nx migrate latest",
-    "graph": "nx graph"
+    "graph": "nx graph",
+    "i18n:extract": "pnpm exec i18next"
   },
   "private": true,
   "devDependencies": {
@@ -87,6 +88,7 @@
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
+    "i18next-parser": "^9.4.0",
     "jest": "^30.0.2",
     "jest-environment-jsdom": "^30.0.2",
     "jest-environment-node": "^30.0.2",
@@ -155,6 +157,9 @@
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
     "helmet": "^8.1.0",
+    "i18next": "^26.0.10",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "i18next-http-backend": "^4.0.0",
     "ioredis": "^5.10.1",
     "jose": "^5.9.0",
     "jwt-decode": "^4.0.0",
@@ -176,6 +181,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.75.0",
+    "react-i18next": "^17.0.7",
     "react-redux": "^9.1.0",
     "react-router-dom": "6.30.3",
     "redux-persist": "^6.0.0",

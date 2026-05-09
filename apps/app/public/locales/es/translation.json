@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "language": "Idioma",
+    "theme": "Tema"
+  },
+  "theme": {
+    "dark": "Oscuro",
+    "light": "Claro",
+    "system": "Sistema"
+  }
+}

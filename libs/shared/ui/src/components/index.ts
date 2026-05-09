@@ -34,3 +34,5 @@ export * from './textarea';
 export * from './toast';
 export * from './tooltip';
 export * from './user-avatar';
+export * from './language-switcher';
+export * from './theme-switcher';

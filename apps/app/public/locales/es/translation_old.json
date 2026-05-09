@@ -1,0 +1,30 @@
+{
+  "auth": {
+    "create_account": "Crear cuenta",
+    "email_or_username": "Correo o usuario",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "invalid_credentials": "Credenciales inválidas",
+    "password": "Contraseña",
+    "sign_in_with_passkey": "Iniciar con passkey",
+    "welcome_back": "¡Bienvenido!"
+  },
+  "common": {
+    "admin": "Administrador",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "dashboard": "Panel",
+    "delete": "Eliminar",
+    "loading": "Cargando...",
+    "logout": "Cerrar sesión",
+    "save": "Guardar",
+    "settings": "Configuración",
+    "sign_in": "Iniciar sesión",
+    "sign_up": "Registrarse"
+  },
+  "settings": {
+    "connected_accounts": "Cuentas conectadas",
+    "passkeys": "Passkeys",
+    "profile": "Perfil",
+    "title": "Configuración"
+  }
+}

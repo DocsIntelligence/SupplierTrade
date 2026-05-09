@@ -1,0 +1,30 @@
+{
+  "auth": {
+    "create_account": "Create account",
+    "email_or_username": "Email or username",
+    "forgot_password": "Forgot password?",
+    "invalid_credentials": "Invalid credentials",
+    "password": "Password",
+    "sign_in_with_passkey": "Sign in with passkey",
+    "welcome_back": "Welcome back!"
+  },
+  "common": {
+    "admin": "Admin",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "dashboard": "Dashboard",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "logout": "Logout",
+    "save": "Save",
+    "settings": "Settings",
+    "sign_in": "Sign in",
+    "sign_up": "Sign up"
+  },
+  "settings": {
+    "connected_accounts": "Connected Accounts",
+    "passkeys": "Passkeys",
+    "profile": "Profile",
+    "title": "Settings"
+  }
+}

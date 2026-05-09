@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { selectUser, useAppSelector } from '@org/store';
-import { Button, Card, UserAvatar } from '@org/ui';
+import {
+  Button,
+  Card,
+  LanguageSwitcher,
+  ThemeSwitcher,
+  UserAvatar,
+} from '@org/ui';
 import { toast } from 'sonner';
 import { startRegistration } from '@simplewebauthn/browser';
 import { APP_ENV } from '../../../config';
@@ -22,6 +29,7 @@ interface PasskeyInfo {
 }
 
 export function Settings() {
+  const { t } = useTranslation();
   const user = useAppSelector(selectUser);
   const [identities, setIdentities] = useState<Identity[]>([]);
   const [passkeys, setPasskeys] = useState<PasskeyInfo[]>([]);
@@ -255,6 +263,27 @@ export function Settings() {
             ))}
           </div>
         )}
+      </Card>
+
+      {/* Preferences */}
+      <Card className="rounded-xl p-6">
+        <h3 className="font-medium text-foreground mb-4">
+          {t('settings.language', 'Language')} & {t('settings.theme', 'Theme')}
+        </h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground/70">
+              {t('settings.language', 'Language')}
+            </span>
+            <LanguageSwitcher />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground/70">
+              {t('settings.theme', 'Theme')}
+            </span>
+            <ThemeSwitcher />
+          </div>
+        </div>
       </Card>
     </div>
   );

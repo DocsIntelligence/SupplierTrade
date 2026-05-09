@@ -1,0 +1,37 @@
+{
+  "common": {
+    "sign_in": "Iniciar sesión",
+    "sign_up": "Registrarse",
+    "logout": "Cerrar sesión",
+    "dashboard": "Panel",
+    "settings": "Configuración",
+    "admin": "Administrador",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar"
+  },
+  "auth": {
+    "email_or_username": "Correo o usuario",
+    "password": "Contraseña",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "create_account": "Crear cuenta",
+    "welcome_back": "¡Bienvenido!",
+    "invalid_credentials": "Credenciales inválidas",
+    "sign_in_with_passkey": "Iniciar con passkey"
+  },
+  "settings": {
+    "title": "Configuración",
+    "profile": "Perfil",
+    "connected_accounts": "Cuentas conectadas",
+    "passkeys": "Passkeys",
+    "language": "Idioma",
+    "theme": "Tema"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  }
+}
