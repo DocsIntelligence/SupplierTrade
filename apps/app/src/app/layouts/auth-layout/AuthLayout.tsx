@@ -1,7 +1,26 @@
-import { Outlet } from 'react-router-dom';
+import {
+  selectAuthStatus,
+  selectIsAuthenticated,
+  useAppSelector,
+} from '@org/store';
+import { PageLoader } from '@org/ui';
+import { Navigate, Outlet } from 'react-router-dom';
 import { Card } from '@org/ui';
 
 export function AuthLayout() {
+  const isAuth = useAppSelector(selectIsAuthenticated);
+  const status = useAppSelector(selectAuthStatus);
+
+  // Wait for the initial auth check to complete
+  if (status === 'pending') {
+    return <PageLoader />;
+  }
+
+  // Already logged in — skip auth pages, go to dashboard
+  if (isAuth) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">

@@ -91,7 +91,7 @@ export class StorageController {
     return this.storage.list(prefix ?? `${user.id}/`);
   }
 
-  @Delete(':key(*)')
+  @Delete('{*key}')
   @ApiOperation({ summary: 'Delete a file by key' })
   async deleteFile(@Param('key') key: string) {
     await this.storage.delete(key);

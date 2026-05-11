@@ -24,7 +24,7 @@ import { UsersModule } from './users/users.module';
     AppLoggerModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     DatabaseModule,
-    MailModule,
+    MailModule.forRootAsync(),
     CommonModule,
     AuthModule,
     UsersModule,

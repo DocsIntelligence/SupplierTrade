@@ -1,19 +1,24 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { DatabaseService } from '../database/database.service';
+import { MailTransport } from './mail.transport';
 import type { SendMailDto } from './dto/send-mail.dto';
+
+const MAIL_QUEUE_ENABLED = 'MAIL_QUEUE_ENABLED';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(
-    @InjectQueue('mail') private readonly mailQueue: Queue,
+    @Optional() @InjectQueue('mail') private readonly mailQueue: Queue | null,
+    @Inject(MAIL_QUEUE_ENABLED) private readonly queueEnabled: boolean,
     private readonly db: DatabaseService,
+    private readonly transport: MailTransport,
   ) {}
 
-  /** Enqueue a mail for async delivery */
+  /** Enqueue a mail for async delivery, or send synchronously if Redis is unavailable */
   async enqueue(dto: SendMailDto): Promise<string> {
     // Persist to DB first
     const log = await this.db.mailLog.create({
@@ -27,21 +32,42 @@ export class MailService {
       },
     });
 
-    // Add to queue
-    await this.mailQueue.add(
-      'send',
-      { ...dto, logId: log.id },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    if (this.queueEnabled && this.mailQueue) {
+      // Add to queue for async processing
+      await this.mailQueue.add(
+        'send',
+        { ...dto, logId: log.id },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+      this.logger.debug(
+        `Queued mail to ${dto.to}: ${dto.subject} (id: ${log.id})`,
+      );
+    } else {
+      // Send synchronously — no Redis available
+      try {
+        await this.transport.send(dto.to, dto.subject, dto.html ?? '');
+        await this.db.mailLog.update({
+          where: { id: log.id },
+          data: { status: 'sent', sentAt: new Date(), attempts: 1 },
+        });
+        this.logger.debug(
+          `Sent mail synchronously to ${dto.to}: ${dto.subject} (id: ${log.id})`,
+        );
+      } catch (error) {
+        const message = (error as Error).message;
+        this.logger.error(`Failed to send mail to ${dto.to}: ${message}`);
+        await this.db.mailLog.update({
+          where: { id: log.id },
+          data: { status: 'failed', error: message, attempts: 1 },
+        });
+      }
+    }
 
-    this.logger.debug(
-      `Queued mail to ${dto.to}: ${dto.subject} (id: ${log.id})`,
-    );
     return log.id;
   }
 
