@@ -4,8 +4,12 @@ export * from './badge';
 export * from './button';
 export * from './card';
 export * from './checkbox';
+export * from './chip';
+export * from './data-table';
+export * from './date-picker';
 export * from './dialog';
 export * from './dropdown-menu';
+export * from './filter-bar';
 export * from './form-field';
 export {
   Form,
@@ -36,3 +40,4 @@ export * from './tooltip';
 export * from './user-avatar';
 export * from './language-switcher';
 export * from './theme-switcher';
+export * from './rich-text-editor';
