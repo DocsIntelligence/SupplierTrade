@@ -308,3 +308,225 @@ model MailLog {
   @@index([status])
   @@index([createdAt])
 }
+
+// ── AI usage metering (generic; nullable trace columns are soft refs) ──
+model AiUsage {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  /// When the AI call returned (success or error). Null on still-streaming rows.
+  finishedAt DateTime?
+
+  // ── Who ─────────────────────────────────────────────────────────
+  /// Acting user (null for system/cron jobs like a backfill reindex).
+  userId    String?
+  /// Tenant. Denormalised so org-level rollups don't need to join through user.
+  orgId     String?
+  /// Group N calls in one user "session" (chat conversation, drafting session,
+  /// review session). Free-form id minted by the caller.
+  sessionId String?
+
+  // ── Trace hierarchy (Langfuse-style) ────────────────────────────
+  /// Parent trace id. An "extract" trace might fan out into classify + extract +
+  /// critique sub-calls — same `traceId` on all three, with `parentSpanId`
+  /// linking children to their parent within the trace.
+  traceId      String?
+  parentSpanId String?
+
+  // ── What ────────────────────────────────────────────────────────
+  /// Logical operation. Keep in sync with `AI_OPERATIONS` in code.
+  /// 'classify' | 'extract' | 'critique' | 'generate' | 'revise' | 'analyse'
+  /// | 'ask' | 'embed' | 'parse' | 'rerank' | 'moderate' | 'vision' | 'tts'
+  /// | 'stt' | 'tool_call'.
+  operation   String
+  /// Product-feature attribution for per-feature billing dashboards.
+  /// 'doc.draft.legal_notice' | 'intel.classify' | 'intel.extract.invoice'
+  /// | 'intel.analyse' | 'intel.ask' | 'search.embed' | …
+  featureCode String?
+
+  // ── Model identity ─────────────────────────────────────────────
+  /// 'openai' | 'anthropic' | 'google' | 'llamaparse' | 'reducto' | …
+  provider     String
+  /// e.g. 'claude-haiku-4-5-20251001', 'gpt-5o', 'text-embedding-3-small'.
+  model        String
+  /// Surface-pinned snapshot when the provider exposes one (e.g. dated alias).
+  modelVersion String?
+
+  // ── Related entities (any combo set; all indexed) ──────────────
+  /// Drafting document (Documents world).
+  documentId       String?
+  /// Uploaded source (Intelligence world).
+  sourceDocumentId String?
+  /// Pipeline run (one per uploaded doc through a pipeline).
+  pipelineRunId    String?
+  /// Extraction record (one per successful extract).
+  extractionId     String?
+  /// Analysis run (analyse / ask).
+  analysisRunId    String?
+  /// Batch (groups N pipeline runs from a single multi-file upload).
+  batchId          String?
+
+  // ── Token measurements ─────────────────────────────────────────
+  inputTokens       Int @default(0)
+  outputTokens      Int @default(0)
+  /// Anthropic cache-read input tokens (charged at a discount).
+  cachedInputTokens Int @default(0)
+  /// Anthropic cache-write input tokens (charged at a premium).
+  cacheWriteTokens  Int @default(0)
+  /// Reasoning / "thinking" tokens (OpenAI o-series, Anthropic extended
+  /// thinking, Gemini "thoughts") — separate billing tier on some models.
+  reasoningTokens   Int @default(0)
+  totalTokens       Int @default(0)
+
+  // ── Alternate billable units (pages, requests, characters, seconds) ──
+  /// LlamaParse / Reducto bill per page; image OCR per image; TTS per char.
+  /// Use this when `unitType != 'tokens'`. Cost engine multiplies by the
+  /// matching pricing row.
+  unitsUsed Int    @default(0)
+  unitType  String @default("tokens")
+
+  // ── File / payload sizes (debugging, not billing) ──────────────
+  inputBytes  Int?
+  outputBytes Int?
+
+  // ── Cost ───────────────────────────────────────────────────────
+  /// Cost in USD computed at call time from the pricing row in effect.
+  estimatedCostUsd Decimal @default(0) @db.Decimal(12, 6)
+  /// FK into `AiModelPricing.id` so finance can reconcile against the exact
+  /// rate-card row that was applied (rate cards change; rows are immutable).
+  pricingId        String?
+
+  // ── Latency ────────────────────────────────────────────────────
+  durationMs            Int  @default(0)
+  /// Time-to-first-token for streaming calls (null for non-streaming).
+  latencyToFirstTokenMs Int?
+  /// Time spent queued before the request started (provider rate-limit waits).
+  queuedMs              Int?
+
+  // ── Outcome ────────────────────────────────────────────────────
+  /// 'success' | 'error' | 'timeout' | 'rate_limited' | 'cancelled' | 'partial'.
+  status       String  @default("success")
+  /// 1 = first try; >1 = retry / fallback to next provider.
+  attempt      Int     @default(1)
+  /// When this row is a retry of an earlier failed call, link back so the UI
+  /// can collapse retry chains under the original attempt.
+  retryOfId    String?
+  /// Provider's reason for stopping: 'stop' | 'length' | 'tool_calls'
+  /// | 'content_filter' | 'error' | 'cancelled'.
+  finishReason String?
+  errorCode    String?
+  errorMessage String?
+
+  // ── Provider request identity (debugging + dedupe) ────────────
+  /// Provider's request id (Anthropic `x-request-id`, OpenAI `request-id`).
+  requestId      String?
+  /// Caller-supplied idempotency key (dedupe identical retries).
+  idempotencyKey String?
+
+  // ── Sampling knobs (for reproducibility / cost analysis) ──────
+  temperature Float?
+  maxTokens   Int?
+  /// True when the response was streamed.
+  streamed    Boolean @default(false)
+
+  // ── Filtering + retention ─────────────────────────────────────
+  /// Free-form labels for search / cost tagging (`feature:invoice`,
+  /// `experiment:v2`, `customer:acme`, …).
+  tags          String[]
+  /// GDPR / compliance: how long this row should live. A nightly job purges
+  /// rows whose `createdAt + retentionDays` is in the past.
+  retentionDays Int      @default(365)
+
+  /// Provider-specific extras + caller hints. Keep small (<8 KB) — anything
+  /// big belongs as a column or external blob.
+  metadata Json?
+
+  // Indexes — one composite per major rollup axis. Postgres can answer
+  // `GROUP BY model SUM(tokens)` against tens of millions of rows in ms when
+  // (provider, model, createdAt) is indexed in that order.
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([orgId, createdAt])
+  @@index([sessionId])
+  @@index([traceId])
+  @@index([documentId])
+  @@index([sourceDocumentId])
+  @@index([pipelineRunId])
+  @@index([extractionId])
+  @@index([analysisRunId])
+  @@index([batchId])
+  @@index([operation, createdAt])
+  @@index([provider, model, createdAt])
+  @@index([featureCode, createdAt])
+  @@index([status, createdAt])
+}
+
+// ── Generic key/scope/value settings store ──
+model Setting {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Dotted hierarchical key (e.g. `ai.usage.tracking.enabled`,
+  /// `ai.usage.retention.days`, `intelligence.classify.confidence_threshold`).
+  key String
+
+  /// 'system' | 'org' | 'user'. Narrower scope wins on lookup.
+  scope   String
+  /// Required for org/user scope; empty string sentinel for system. Non-null
+  /// so the compound unique `(scope, scopeId, key)` enforces "one override
+  /// per scope+key" (Postgres treats NULL as distinct in unique indexes).
+  scopeId String  @default("")
+
+  /// JSON value — booleans, numbers, strings, arrays, objects all fit here.
+  value Json
+
+  /// Optional admin note explaining why the override exists ("disabled for
+  /// EU customers", "raised retention to 730d for compliance", …).
+  notes String?
+
+  @@unique([scope, scopeId, key])
+  @@index([key])
+  @@index([scope, scopeId])
+}
+
+// ── AI model pricing table (cost reconciliation for AiUsage) ──
+model AiModelPricing {
+  id           String  @id @default(cuid())
+  provider     String
+  model        String
+  modelVersion String?
+  currency     String  @default("USD")
+
+  /// What `unitsUsed` measures for the matching AiUsage rows.
+  /// 'tokens' (LLMs) | 'pages' (LlamaParse) | 'characters' (TTS)
+  /// | 'requests' (per-call flat) | 'seconds' (STT) | 'images' (vision).
+  unitType String @default("tokens")
+
+  // Per-1M-unit rates. Set the lanes that apply for this model; null = N/A.
+  inputPer1M       Decimal? @db.Decimal(12, 6)
+  outputPer1M      Decimal? @db.Decimal(12, 6)
+  /// Anthropic cache-read input — usually a fraction of inputPer1M.
+  cachedInputPer1M Decimal? @db.Decimal(12, 6)
+  /// Anthropic cache-write input — usually a premium over inputPer1M.
+  cacheWritePer1M  Decimal? @db.Decimal(12, 6)
+  /// Reasoning / thinking tokens (o-series, Anthropic ext-thinking).
+  reasoningPer1M   Decimal? @db.Decimal(12, 6)
+  /// Flat fee per call (overrides per-unit math when set; or stacked on top).
+  perCallUsd       Decimal? @db.Decimal(12, 6)
+
+  /// Active rate-card validity window. Multiple rows per model are normal
+  /// (price history); exactly one is active (`effectiveTo IS NULL`) at a time.
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  active        Boolean   @default(true)
+  /// 'official' | 'manual' | 'imported' — provenance for the rate card.
+  source        String    @default("manual")
+  /// Admin notes — promo discounts, contract pricing, "to validate", …
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider, model, active])
+  @@index([provider, model, effectiveFrom])
+}

@@ -3,6 +3,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AiModule } from './ai/ai.module';
+import { AiUsageModule } from './ai-usage/ai-usage.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -15,6 +16,7 @@ import { AppLoggerModule } from './logger/logger.module';
 import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
 import { PaymentModule } from './payment/payment.module';
+import { SettingsModule } from './settings/settings.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
@@ -33,6 +35,8 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     LookupModule,
     AiModule,
+    AiUsageModule,
+    SettingsModule,
     StorageModule,
   ],
   controllers: [AppController],
