@@ -16,6 +16,7 @@ import { AppLoggerModule } from './logger/logger.module';
 import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
 import { PaymentModule } from './payment/payment.module';
+import { RenderModule } from './render/render.module';
 import { SettingsModule } from './settings/settings.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
@@ -37,6 +38,7 @@ import { UsersModule } from './users/users.module';
     AiModule,
     AiUsageModule,
     SettingsModule,
+    RenderModule,
     StorageModule,
   ],
   controllers: [AppController],
