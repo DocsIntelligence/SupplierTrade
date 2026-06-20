@@ -80,7 +80,7 @@ export class PasskeyService {
       },
       excludeCredentials: existingPasskeys.map((pk) => ({
         id: pk.credentialId,
-        transports: pk.transports as AuthenticatorTransportFuture[],
+        transports: pk.transports as unknown as AuthenticatorTransportFuture[],
       })),
     });
 
@@ -151,7 +151,7 @@ export class PasskeyService {
         });
         allowCredentials = passkeys.map((pk) => ({
           id: pk.credentialId,
-          transports: pk.transports as AuthenticatorTransportFuture[],
+          transports: pk.transports as unknown as AuthenticatorTransportFuture[],
         }));
       }
       challengeKey = `auth:${email}`;
@@ -193,7 +193,7 @@ export class PasskeyService {
         id: passkey.credentialId,
         publicKey: new Uint8Array(passkey.publicKey),
         counter: Number(passkey.counter),
-        transports: passkey.transports as AuthenticatorTransportFuture[],
+        transports: passkey.transports as unknown as AuthenticatorTransportFuture[],
       },
     });
 

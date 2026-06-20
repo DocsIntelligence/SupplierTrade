@@ -2,6 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { DatabaseService } from '../database/database.service';
 
+/**
+ * Continuous percentile with linear interpolation, matching Postgres'
+ * `percentile_cont`. Computed in JS so latency stats stay DB-portable
+ * (SQLite has no percentile function). `sorted` must be ascending.
+ */
+function percentileCont(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  const rank = p * (sorted.length - 1);
+  const lo = Math.floor(rank);
+  const hi = Math.ceil(rank);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (rank - lo);
+}
+
 export interface ListUsageQuery {
   /** Caller scope. */
   userId?: string;
@@ -123,21 +137,48 @@ export class AiUsageService {
     });
     const successCalls = (agg._count._all ?? 0) - errorCalls;
 
+    // Range-scoped where reused by the per-day series and latency percentiles.
+    // (Computed in JS rather than raw SQL so the queries stay portable across
+    // Postgres/SQLite — SQLite has no date_trunc/FILTER/percentile_cont.)
+    const rangeWhere: Prisma.AiUsageWhereInput = {
+      ...where,
+      createdAt: { gte: rangeFrom, lte: rangeTo },
+    };
+
     // ── per-day series ────────────────────────────────────────────────
-    const dailyRows = await this.db.$queryRaw<
-      Array<{ day: Date; calls: bigint; tokens: bigint; cost: number; errors: bigint }>
-    >`
-      SELECT date_trunc('day', "createdAt")::date AS day,
-             COUNT(*)::bigint AS calls,
-             COALESCE(SUM("totalTokens"), 0)::bigint AS tokens,
-             COALESCE(SUM("estimatedCostUsd"), 0)::float AS cost,
-             COUNT(*) FILTER (WHERE status <> 'success')::bigint AS errors
-        FROM "AiUsage"
-       WHERE "createdAt" BETWEEN ${rangeFrom} AND ${rangeTo}
-         ${this.scopeRaw(q)}
-       GROUP BY day
-       ORDER BY day ASC
-    `;
+    const seriesRows = await this.db.aiUsage.findMany({
+      where: rangeWhere,
+      select: {
+        createdAt: true,
+        totalTokens: true,
+        estimatedCostUsd: true,
+        status: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const dayBuckets = new Map<
+      string,
+      { calls: number; tokens: number; cost: number; errors: number }
+    >();
+    for (const r of seriesRows) {
+      const day = r.createdAt.toISOString().slice(0, 10);
+      const b =
+        dayBuckets.get(day) ?? { calls: 0, tokens: 0, cost: 0, errors: 0 };
+      b.calls += 1;
+      b.tokens += r.totalTokens ?? 0;
+      b.cost += Number(r.estimatedCostUsd ?? 0);
+      if (r.status !== 'success') b.errors += 1;
+      dayBuckets.set(day, b);
+    }
+    const daily = [...dayBuckets.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, b]) => ({
+        day,
+        calls: b.calls,
+        tokens: b.tokens,
+        costUsd: b.cost,
+        errors: b.errors,
+      }));
 
     // ── group-by rollups ──────────────────────────────────────────────
     const perOp = await this.db.aiUsage.groupBy({
@@ -163,18 +204,17 @@ export class AiUsageService {
     });
 
     // ── p50/p95/p99 latency ───────────────────────────────────────────
-    const latRows = await this.db.$queryRaw<
-      Array<{ p50: number; p95: number; p99: number }>
-    >`
-      SELECT
-        percentile_cont(0.50) WITHIN GROUP (ORDER BY "durationMs")::float AS p50,
-        percentile_cont(0.95) WITHIN GROUP (ORDER BY "durationMs")::float AS p95,
-        percentile_cont(0.99) WITHIN GROUP (ORDER BY "durationMs")::float AS p99
-      FROM "AiUsage"
-      WHERE "createdAt" BETWEEN ${rangeFrom} AND ${rangeTo}
-        ${this.scopeRaw(q)}
-    `;
-    const lat = latRows[0] ?? { p50: 0, p95: 0, p99: 0 };
+    const durationRows = await this.db.aiUsage.findMany({
+      where: rangeWhere,
+      select: { durationMs: true },
+      orderBy: { durationMs: 'asc' },
+    });
+    const durations = durationRows.map((r) => r.durationMs ?? 0);
+    const lat = {
+      p50: percentileCont(durations, 0.5),
+      p95: percentileCont(durations, 0.95),
+      p99: percentileCont(durations, 0.99),
+    };
 
     return {
       totals: {
@@ -190,13 +230,7 @@ export class AiUsageService {
         costUsd: Number(agg._sum.estimatedCostUsd ?? 0),
         averageDurationMs: Math.round(agg._avg.durationMs ?? 0),
       },
-      daily: dailyRows.map((r) => ({
-        day: r.day.toISOString().slice(0, 10),
-        calls: Number(r.calls),
-        tokens: Number(r.tokens),
-        costUsd: Number(r.cost),
-        errors: Number(r.errors),
-      })),
+      daily,
       perOperation: perOp.map((r) => ({
         operation: r.operation,
         calls: r._count._all,
@@ -245,32 +279,15 @@ export class AiUsageService {
       if (q.to) where.createdAt.lte = new Date(q.to);
     }
     if (q.q) {
+      // SQLite has no `mode: 'insensitive'`; its LIKE is case-insensitive for
+      // ASCII by default, so plain `contains` already matches case-insensitively.
       where.OR = [
-        { model: { contains: q.q, mode: 'insensitive' } },
-        { featureCode: { contains: q.q, mode: 'insensitive' } },
-        { errorMessage: { contains: q.q, mode: 'insensitive' } },
+        { model: { contains: q.q } },
+        { featureCode: { contains: q.q } },
+        { errorMessage: { contains: q.q } },
       ];
     }
     return where;
-  }
-
-  /** Hand-written WHERE for raw SQL paths (daily series + percentiles). */
-  private scopeRaw(q: ListUsageQuery): Prisma.Sql {
-    const parts: Prisma.Sql[] = [];
-    if (q.userId) parts.push(Prisma.sql`AND "userId" = ${q.userId}`);
-    if (q.orgId) parts.push(Prisma.sql`AND "orgId" = ${q.orgId}`);
-    if (q.documentId) parts.push(Prisma.sql`AND "documentId" = ${q.documentId}`);
-    if (q.sourceDocumentId)
-      parts.push(Prisma.sql`AND "sourceDocumentId" = ${q.sourceDocumentId}`);
-    if (q.pipelineRunId)
-      parts.push(Prisma.sql`AND "pipelineRunId" = ${q.pipelineRunId}`);
-    if (q.batchId) parts.push(Prisma.sql`AND "batchId" = ${q.batchId}`);
-    if (q.operation) parts.push(Prisma.sql`AND "operation" = ${q.operation}`);
-    if (q.provider) parts.push(Prisma.sql`AND "provider" = ${q.provider}`);
-    if (q.model) parts.push(Prisma.sql`AND "model" = ${q.model}`);
-    return parts.length
-      ? Prisma.join(parts, ' ')
-      : Prisma.empty;
   }
 
   private serialise = (r: Prisma.AiUsageGetPayload<NonNullable<unknown>>) => ({

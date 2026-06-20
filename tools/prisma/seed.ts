@@ -1,11 +1,7 @@
-import {
-  PrismaClient,
-  PaymentType,
-  PlanInterval,
-  Currency,
-  Feature,
-  FeatureAction,
-} from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Former enum columns are plain SQLite strings; allowed values mirror the
+// const objects in `@org/utils` (libs/shared/utils/src/lib/enums.ts).
 
 const prisma = new PrismaClient();
 
@@ -18,33 +14,33 @@ async function main() {
       id: 'free-plan',
       name: 'Free',
       description: 'Basic access with limited features',
-      type: PaymentType.one_time,
+      type: 'one_time',
       duration: 30,
-      interval: PlanInterval.daily,
+      interval: 'daily',
       price: 0,
-      currency: Currency.INR,
+      currency: 'INR',
       active: false,
       features: {
         create: [
-          { name: Feature.documents, action: FeatureAction.reset, quantity: 1 },
+          { name: 'documents', action: 'reset', quantity: 1 },
           {
-            name: Feature.ai_tokens,
-            action: FeatureAction.reset,
+            name: 'ai_tokens',
+            action: 'reset',
             quantity: 1000,
           },
           {
-            name: Feature.ai_attempts,
-            action: FeatureAction.reset,
+            name: 'ai_attempts',
+            action: 'reset',
             quantity: 5,
           },
           {
-            name: Feature.storage_mb,
-            action: FeatureAction.reset,
+            name: 'storage_mb',
+            action: 'reset',
             quantity: 50,
           },
           {
-            name: Feature.api_calls,
-            action: FeatureAction.reset,
+            name: 'api_calls',
+            action: 'reset',
             quantity: 100,
           },
         ],
@@ -60,40 +56,40 @@ async function main() {
       id: 'pro-monthly',
       name: 'Pro Monthly',
       description: 'Unlimited access, billed monthly',
-      type: PaymentType.subscription,
+      type: 'subscription',
       duration: 1,
-      interval: PlanInterval.monthly,
+      interval: 'monthly',
       price: 499,
       originalPrice: 999,
       discountLabel: '50% OFF',
       priceMultiplier: 100,
-      currency: Currency.INR,
+      currency: 'INR',
       active: true,
       features: {
         create: [
           {
-            name: Feature.documents,
-            action: FeatureAction.reset,
+            name: 'documents',
+            action: 'reset',
             quantity: -1,
           },
           {
-            name: Feature.ai_tokens,
-            action: FeatureAction.reset,
+            name: 'ai_tokens',
+            action: 'reset',
             quantity: 50000,
           },
           {
-            name: Feature.ai_attempts,
-            action: FeatureAction.reset,
+            name: 'ai_attempts',
+            action: 'reset',
             quantity: -1,
           },
           {
-            name: Feature.storage_mb,
-            action: FeatureAction.reset,
+            name: 'storage_mb',
+            action: 'reset',
             quantity: 500,
           },
           {
-            name: Feature.api_calls,
-            action: FeatureAction.reset,
+            name: 'api_calls',
+            action: 'reset',
             quantity: -1,
           },
         ],
@@ -109,40 +105,40 @@ async function main() {
       id: 'pro-yearly',
       name: 'Pro Yearly',
       description: 'Unlimited access, billed annually',
-      type: PaymentType.subscription,
+      type: 'subscription',
       duration: 1,
-      interval: PlanInterval.yearly,
+      interval: 'yearly',
       price: 3999,
       originalPrice: 11988,
       discountLabel: '67% OFF',
       priceMultiplier: 100,
-      currency: Currency.INR,
+      currency: 'INR',
       active: true,
       features: {
         create: [
           {
-            name: Feature.documents,
-            action: FeatureAction.reset,
+            name: 'documents',
+            action: 'reset',
             quantity: -1,
           },
           {
-            name: Feature.ai_tokens,
-            action: FeatureAction.reset,
+            name: 'ai_tokens',
+            action: 'reset',
             quantity: -1,
           },
           {
-            name: Feature.ai_attempts,
-            action: FeatureAction.reset,
+            name: 'ai_attempts',
+            action: 'reset',
             quantity: -1,
           },
           {
-            name: Feature.storage_mb,
-            action: FeatureAction.reset,
+            name: 'storage_mb',
+            action: 'reset',
             quantity: 2000,
           },
           {
-            name: Feature.api_calls,
-            action: FeatureAction.reset,
+            name: 'api_calls',
+            action: 'reset',
             quantity: -1,
           },
         ],
@@ -181,9 +177,10 @@ async function main() {
     const newValues = group.values.filter((v) => !existingValues.has(v.value));
 
     if (newValues.length > 0) {
+      // Note: newValues is already filtered to values not present, and
+      // SQLite's createMany does not support `skipDuplicates`.
       await prisma.lookupValue.createMany({
         data: newValues.map((v) => ({ groupId: existing.id, ...v })),
-        skipDuplicates: true,
       });
       console.log(
         `  ✓ Lookup "${group.key}" — added ${newValues.length} new values`,

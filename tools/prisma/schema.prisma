@@ -3,72 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ENUMS
+// NOTE ON "ENUMS"
 // ═══════════════════════════════════════════════════════════════════
-
-enum Role {
-  user
-  admin
-}
-
-enum Provider {
-  email
-  google
-  github
-  linkedin
-}
-
-enum PaymentType {
-  one_time
-  subscription
-}
-
-enum PaymentStatus {
-  pending
-  completed
-  failed
-  refunded
-}
-
-enum PaymentGateway {
-  razorpay
-  stripe
-}
-
-enum PlanInterval {
-  daily
-  weekly
-  monthly
-  quarterly
-  yearly
-}
-
-enum Feature {
-  documents
-  ai_tokens
-  ai_attempts
-  storage_mb
-  api_calls
-}
-
-enum FeatureAction {
-  reset
-  increment
-}
-
-enum Currency {
-  INR
-  USD
-  EUR
-  CAD
-  AUD
-  GBP
-}
+// SQLite does not support native enums, scalar string lists, or the
+// `@db.Decimal(p,s)` native type. The former enum columns are plain
+// `String` fields; their allowed values are defined as const objects +
+// union types in `@org/utils` (libs/shared/utils/src/lib/enums.ts) and
+// shared by both the API and the frontend. Scalar arrays are stored as
+// `Json`. Keep the @org/utils enums in sync with the defaults below.
 
 // ═══════════════════════════════════════════════════════════════════
 // MODELS
@@ -82,8 +29,8 @@ model User {
   email         String    @unique
   username      String    @unique
   picture       String?
-  provider      Provider  @default(email)
-  role          Role      @default(user)
+  provider      String    @default("email")
+  role          String    @default("user")
   emailVerified Boolean   @default(false)
   locale        String    @default("en-US")
   createdAt     DateTime  @default(now())
@@ -121,7 +68,7 @@ model Secrets {
 model UserIdentity {
   id                String   @id @default(cuid())
   userId            String
-  provider          Provider
+  provider          String
   providerAccountId String
   email             String?
   createdAt         DateTime @default(now())
@@ -142,7 +89,7 @@ model Passkey {
   counter      BigInt   @default(0)
   deviceType   String?
   backedUp     Boolean  @default(false)
-  transports   String[] @default([])
+  transports   Json     @default("[]")
   label        String?
   userId       String
   createdAt    DateTime @default(now())
@@ -163,32 +110,32 @@ model Challenge {
 // ─── Plans ─────────────────────────────────────────────────────
 
 model Plan {
-  id              String       @id @default(cuid())
+  id              String   @id @default(cuid())
   name            String
   description     String?
-  type            PaymentType  @default(one_time)
-  duration        Int          @default(1)
-  interval        PlanInterval @default(monthly)
-  price           Int          @default(0)
+  type            String   @default("one_time")
+  duration        Int      @default(1)
+  interval        String   @default("monthly")
+  price           Int      @default(0)
   originalPrice   Int?
   discountLabel   String?
-  priceMultiplier Int          @default(100)
-  currency        Currency     @default(INR)
-  active          Boolean      @default(true)
+  priceMultiplier Int      @default(100)
+  currency        String   @default("INR")
+  active          Boolean  @default(true)
   gatewayPlanId   String?
-  totalCycleCount Int?         @default(1)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  totalCycleCount Int?     @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   features PlanFeature[]
   wallets  UserWallet[]
 }
 
 model PlanFeature {
-  id          String        @id @default(cuid())
-  name        Feature
-  action      FeatureAction @default(reset)
-  quantity    Int           @default(0) // -1 = unlimited
+  id          String  @id @default(cuid())
+  name        String
+  action      String  @default("reset")
+  quantity    Int     @default(0) // -1 = unlimited
   description String?
 
   planId String
@@ -200,9 +147,9 @@ model PlanFeature {
 // ─── Wallet ────────────────────────────────────────────────────
 
 model UserWallet {
-  id          String      @id @default(cuid())
-  paymentType PaymentType @default(one_time)
-  active      Boolean     @default(false)
+  id          String   @id @default(cuid())
+  paymentType String   @default("one_time")
+  active      Boolean  @default(false)
   startAt     DateTime
   endAt       DateTime
 
@@ -222,10 +169,10 @@ model UserWallet {
 }
 
 model WalletUsage {
-  id       String  @id @default(cuid())
-  name     Feature
-  quantity Int     @default(0) // -1 = unlimited
-  consumed Int     @default(0)
+  id       String @id @default(cuid())
+  name     String
+  quantity Int    @default(0) // -1 = unlimited
+  consumed Int    @default(0)
 
   userWalletId String
   wallet       UserWallet @relation(fields: [userWalletId], references: [id], onDelete: Cascade)
@@ -236,14 +183,14 @@ model WalletUsage {
 // ─── Payments ──────────────────────────────────────────────────
 
 model Payment {
-  id                    String         @id @default(cuid())
-  gateway               PaymentGateway @default(razorpay)
-  gatewayPaymentId      String?        @unique
+  id                    String    @id @default(cuid())
+  gateway               String    @default("razorpay")
+  gatewayPaymentId      String?   @unique
   gatewayOrderId        String?
   gatewaySubscriptionId String?
-  status                PaymentStatus  @default(pending)
+  status                String    @default("pending")
   amount                Int?
-  currency              Currency?
+  currency              String?
   initiatedAt           DateTime?
   confirmedAt           DateTime?
 
@@ -390,7 +337,7 @@ model AiUsage {
 
   // ── Cost ───────────────────────────────────────────────────────
   /// Cost in USD computed at call time from the pricing row in effect.
-  estimatedCostUsd Decimal @default(0) @db.Decimal(12, 6)
+  estimatedCostUsd Decimal @default(0)
   /// FK into `AiModelPricing.id` so finance can reconcile against the exact
   /// rate-card row that was applied (rate cards change; rows are immutable).
   pricingId        String?
@@ -430,8 +377,8 @@ model AiUsage {
 
   // ── Filtering + retention ─────────────────────────────────────
   /// Free-form labels for search / cost tagging (`feature:invoice`,
-  /// `experiment:v2`, `customer:acme`, …).
-  tags          String[]
+  /// `experiment:v2`, `customer:acme`, …). Stored as a JSON array of strings.
+  tags          Json     @default("[]")
   /// GDPR / compliance: how long this row should live. A nightly job purges
   /// rows whose `createdAt + retentionDays` is in the past.
   retentionDays Int      @default(365)
@@ -440,9 +387,7 @@ model AiUsage {
   /// big belongs as a column or external blob.
   metadata Json?
 
-  // Indexes — one composite per major rollup axis. Postgres can answer
-  // `GROUP BY model SUM(tokens)` against tens of millions of rows in ms when
-  // (provider, model, createdAt) is indexed in that order.
+  // Indexes — one composite per major rollup axis.
   @@index([createdAt])
   @@index([userId, createdAt])
   @@index([orgId, createdAt])
@@ -474,7 +419,7 @@ model Setting {
   scope   String
   /// Required for org/user scope; empty string sentinel for system. Non-null
   /// so the compound unique `(scope, scopeId, key)` enforces "one override
-  /// per scope+key" (Postgres treats NULL as distinct in unique indexes).
+  /// per scope+key".
   scopeId String  @default("")
 
   /// JSON value — booleans, numbers, strings, arrays, objects all fit here.
@@ -503,16 +448,16 @@ model AiModelPricing {
   unitType String @default("tokens")
 
   // Per-1M-unit rates. Set the lanes that apply for this model; null = N/A.
-  inputPer1M       Decimal? @db.Decimal(12, 6)
-  outputPer1M      Decimal? @db.Decimal(12, 6)
+  inputPer1M       Decimal?
+  outputPer1M      Decimal?
   /// Anthropic cache-read input — usually a fraction of inputPer1M.
-  cachedInputPer1M Decimal? @db.Decimal(12, 6)
+  cachedInputPer1M Decimal?
   /// Anthropic cache-write input — usually a premium over inputPer1M.
-  cacheWritePer1M  Decimal? @db.Decimal(12, 6)
+  cacheWritePer1M  Decimal?
   /// Reasoning / thinking tokens (o-series, Anthropic ext-thinking).
-  reasoningPer1M   Decimal? @db.Decimal(12, 6)
+  reasoningPer1M   Decimal?
   /// Flat fee per call (overrides per-unit math when set; or stacked on top).
-  perCallUsd       Decimal? @db.Decimal(12, 6)
+  perCallUsd       Decimal?
 
   /// Active rate-card validity window. Multiple rows per model are normal
   /// (price history); exactly one is active (`effectiveTo IS NULL`) at a time.

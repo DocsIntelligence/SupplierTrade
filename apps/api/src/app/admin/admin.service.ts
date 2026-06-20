@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role } from '@org/utils';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -11,8 +11,8 @@ export class AdminService {
       where: { id: userId },
       select: { role: true },
     });
-    if (target?.role !== Role.admin) return;
-    const adminCount = await this.db.user.count({ where: { role: Role.admin } });
+    if (target?.role !== Role.ADMIN) return;
+    const adminCount = await this.db.user.count({ where: { role: Role.ADMIN } });
     if (adminCount <= 1) {
       throw new BadRequestException(
         'Cannot remove the last admin from the system',
@@ -44,7 +44,7 @@ export class AdminService {
   }
 
   async updateUserRole(userId: string, role: Role) {
-    if (role !== Role.admin) await this.assertNotLastAdmin(userId);
+    if (role !== Role.ADMIN) await this.assertNotLastAdmin(userId);
     return this.db.user.update({
       where: { id: userId },
       data: { role },

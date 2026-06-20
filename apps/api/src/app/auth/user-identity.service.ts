@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, type Provider } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { Provider } from '@org/utils';
 import { DatabaseService } from '../database/database.service';
 
 interface OAuthProfile {

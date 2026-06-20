@@ -15,7 +15,7 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role } from '@org/utils';
 import type { User } from '@org/dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -66,7 +66,7 @@ export class AdminController {
         `Invalid role. Expected one of: ${Object.values(Role).join(', ')}`,
       );
     }
-    if (id === current.id && role !== Role.admin) {
+    if (id === current.id && role !== Role.ADMIN) {
       throw new BadRequestException('Admins cannot demote themselves');
     }
     return this.adminService.updateUserRole(id, role as Role);

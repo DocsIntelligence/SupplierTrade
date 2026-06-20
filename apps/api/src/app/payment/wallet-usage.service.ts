@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Feature } from '@prisma/client';
+import type { Feature } from '@org/utils';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()

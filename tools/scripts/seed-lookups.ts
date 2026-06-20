@@ -46,6 +46,8 @@ async function main() {
       continue;
     }
 
+    // newValues is already filtered to absent values; SQLite's createMany
+    // does not support `skipDuplicates`.
     await prisma.lookupValue.createMany({
       data: newValues.map((v) => ({
         groupId: existing.id,
@@ -53,7 +55,6 @@ async function main() {
         value: v.value,
         order: v.order,
       })),
-      skipDuplicates: true,
     });
 
     console.log(
