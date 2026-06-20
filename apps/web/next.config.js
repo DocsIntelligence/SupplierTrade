@@ -18,13 +18,13 @@ const nextConfig = {
     '@org/store',
   ],
 
-  // Dev server port — avoids conflict with API (3000) and React app (4200)
+  // Dev server port — avoids conflict with API (6130) and React app (6100)
   devIndicators: false,
 
   async rewrites() {
     // Proxy /api/* to the NestJS backend in development
     const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:6130/api';
     const baseUrl = apiUrl.replace(/\/api$/, '');
     return [
       {
