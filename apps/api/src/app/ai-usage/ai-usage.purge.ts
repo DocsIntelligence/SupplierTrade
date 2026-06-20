@@ -61,31 +61,42 @@ export class AiUsagePurgeService implements OnModuleInit, OnModuleDestroy {
    * Delete rows whose `createdAt + retentionDays` is in the past. Returns
    * the number of rows deleted across all chunks.
    *
-   * Why raw SQL — Prisma can't express `createdAt + retentionDays * '1 day'`
-   * in `deleteMany`, and we want the comparison to happen server-side (one
-   * round-trip per chunk) rather than streaming millions of rows to Node.
+   * Per-row expiry (`createdAt + retentionDays days < now`) can't be expressed
+   * in a Prisma `where` (no column-to-column date arithmetic) and the obvious
+   * server-side form is dialect-specific (`::interval` / `DELETE … USING` are
+   * Postgres-only and fail on SQLite). So we page through the ledger oldest-id
+   * first in bounded chunks, decide expiry in JS, and `deleteMany` the expired
+   * ids — portable across SQLite/Postgres and independent of how the driver
+   * stores `DateTime`. Tradeoff: this scans the table per sweep; for a very
+   * large Postgres ledger a native interval DELETE would be cheaper.
    */
   async purge(): Promise<number> {
+    const now = Date.now();
+    const DAY_MS = 86_400_000;
     let total = 0;
-    // Loop until a chunk returns 0 rows — we delete the oldest expired first.
-    // The CTE `to_delete` selects up to BATCH_SIZE expired ids; the outer
-    // DELETE removes exactly those. This keeps each statement bounded.
+    let cursor: string | undefined;
+
     for (;;) {
-      const result = await this.db.$executeRaw`
-        WITH expired AS (
-          SELECT id
-            FROM "AiUsage"
-           WHERE "createdAt" + ("retentionDays" || ' days')::interval < NOW()
-           ORDER BY "createdAt" ASC
-           LIMIT ${BATCH_SIZE}
-        )
-        DELETE FROM "AiUsage" u
-         USING expired e
-         WHERE u.id = e.id
-      `;
-      const deleted = Number(result) || 0;
-      total += deleted;
-      if (deleted < BATCH_SIZE) break; // last chunk
+      const rows = await this.db.aiUsage.findMany({
+        select: { id: true, createdAt: true, retentionDays: true },
+        orderBy: { id: 'asc' },
+        take: BATCH_SIZE,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      });
+      if (rows.length === 0) break;
+      cursor = rows[rows.length - 1].id;
+
+      const expiredIds = rows
+        .filter((r) => r.createdAt.getTime() + r.retentionDays * DAY_MS < now)
+        .map((r) => r.id);
+      if (expiredIds.length > 0) {
+        const { count } = await this.db.aiUsage.deleteMany({
+          where: { id: { in: expiredIds } },
+        });
+        total += count;
+      }
+
+      if (rows.length < BATCH_SIZE) break; // last page
     }
     return total;
   }
