@@ -1,9 +1,43 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 // Former enum columns are plain SQLite strings; allowed values mirror the
 // const objects in `@org/utils` (libs/shared/utils/src/lib/enums.ts).
 
 const prisma = new PrismaClient();
+
+/**
+ * Idempotently upsert a user with a bcrypt-hashed password. Reuses the same
+ * shape `auth.service.register` produces (User + Secrets in one go).
+ */
+async function upsertUser(opts: {
+  email: string;
+  username: string;
+  name: string;
+  password: string;
+  role: 'admin' | 'user';
+}) {
+  const hash = await bcrypt.hash(opts.password, 10);
+  const user = await prisma.user.upsert({
+    where: { email: opts.email },
+    update: { role: opts.role, name: opts.name, emailVerified: true },
+    create: {
+      email: opts.email,
+      username: opts.username,
+      name: opts.name,
+      role: opts.role,
+      provider: 'email',
+      emailVerified: true,
+    },
+  });
+  await prisma.secrets.upsert({
+    where: { userId: user.id },
+    update: { password: hash },
+    create: { userId: user.id, password: hash },
+  });
+  console.log(`  ✓ User "${opts.email}" (role=${opts.role})`);
+  return user;
+}
 
 async function main() {
   // Free plan (inactive — assigned on wallet expiry)
@@ -191,6 +225,27 @@ async function main() {
   }
 
   console.log('✅ Lookups seeded');
+
+  // ── Default users (dev only) ─────────────────────────────────────
+  // Override the password by setting SEED_PASSWORD before running seed.
+  // Both rows are upserted — safe to re-run.
+  console.log('Seeding default users…');
+  const password = process.env.SEED_PASSWORD ?? 'password';
+  await upsertUser({
+    email: 'admin@example.com',
+    username: 'admin',
+    name: 'Admin',
+    password,
+    role: 'admin',
+  });
+  await upsertUser({
+    email: 'test@example.com',
+    username: 'test',
+    name: 'Test User',
+    password,
+    role: 'user',
+  });
+  console.log(`✅ Users seeded (password = "${password}")`);
 }
 
 main()
