@@ -46,6 +46,8 @@ const ConfigLookups = lazyNamed(() => import('./features/config/ConfigLookups'),
 const ConfigSettings = lazyNamed(() => import('./features/config/ConfigSettings'), 'ConfigSettings');
 const ConfigStorage = lazyNamed(() => import('./features/config/ConfigStorage'), 'ConfigStorage');
 const ConfigQueues = lazyNamed(() => import('./features/config/ConfigQueues'), 'ConfigQueues');
+const ConfigReferrals = lazyNamed(() => import('./features/config/ConfigReferrals'), 'ConfigReferrals');
+const Referrals = lazyNamed(() => import('./features/referrals/Referrals'), 'Referrals');
 
 export function App() {
   const dispatch = useAppDispatch();
@@ -81,6 +83,7 @@ export function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/referrals" element={<Referrals />} />
 
           <Route path="/config" element={<ConfigLayout />}>
             <Route index element={<ConfigOverview />} />
@@ -95,6 +98,7 @@ export function App() {
             <Route path="settings" element={<ConfigSettings />} />
             <Route path="storage" element={<ConfigStorage />} />
             <Route path="queues" element={<ConfigQueues />} />
+            <Route path="referrals" element={<ConfigReferrals />} />
           </Route>
         </Route>
 

@@ -2,6 +2,12 @@
 
 Append-only record of phases that land. Newest at the top.
 
+## 2026-07-01 — Referrals + seed users + webhooks-no-redis boot fix
+
+- **`referrals` module** — new `Referral` Prisma model + migration `referrals`. `ReferralsService.getMyCode(userId)` lazily assigns a stable 8-char code per user; `attachReferred(code, referredUserId)` links a signup to its referrer (idempotent + rejects self-referral). Stats + admin list + `markRewarded(id, metadata?)` hook. UI: `/referrals` (per-user share + stats) and `/config/referrals` (admin list + mark-awarded). Reward decision is left to the consuming project — boilerplate tracks status only. Docs in `docs/modules/referrals.md`. Index updated.
+- **Seed users** — `tools/prisma/seed.ts` now bootstraps `admin@example.com` (role=admin) + `test@example.com` (role=user) with password `"password"` (override via `SEED_PASSWORD` env). `upsertUser` handles "row already owns this username under a different email" gracefully.
+- **Webhooks boot fix** — `WebhooksModule.forRootAsync()` was unconditionally registering a BullMQ queue, which crashed boot with `Nest could not find BULLMQ_CONFIG(default)` whenever `REDIS_URL` was absent. Now mirrors the mail pattern exactly: no Redis → no queue + no processor; `WebhooksService.dispatch` falls back to its existing sync HTTP path.
+
 ## 2026-06-30 — Tier 1 + Tier 3 upgrade (docs/16)
 
 **All 13 items complete.** Plan: `docs/16-tier1-tier3-PLAN.md`. Tier 2 deferred (project-specific).

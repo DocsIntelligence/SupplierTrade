@@ -51,6 +51,8 @@ model User {
   twoFactor       TwoFactor?
   auditLogs       AuditLog[]
   idempotencyKeys IdempotencyKey[]
+  referralsMade   Referral[]        @relation("ReferralReferrer")
+  referredBy      Referral?         @relation("ReferralReferred")
 
   @@index([email])
 }
@@ -743,4 +745,46 @@ model IdempotencyKey {
   createdAt      DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REFERRALS — generic, reward-agnostic
+// ═══════════════════════════════════════════════════════════════════
+
+/// One row per (referrer, referred-user) pair. A referrer can produce many
+/// rows (people they invited); a referred user can appear in at most one row
+/// (you can only be referred once). The `code` column lives here so a single
+/// user can have their own short share code without a separate table; we
+/// upsert with the referrer's code on each new referral so it's stable per
+/// referrer (the first row created for a referrer sets it; subsequent rows
+/// re-use it via the service).
+///
+/// `rewardStatus` + `rewardMetadata` are project-neutral hooks. The boilerplate
+/// only tracks status (`pending` / `awarded` / `cancelled`) — your project
+/// decides WHEN to award (e.g. after first payment) and writes the actual
+/// credit/wallet adjustment.
+model Referral {
+  id              String    @id @default(cuid())
+  /// Short shareable code, unique across the system (8–10 chars).
+  code            String
+  referrerId      String
+  referrer        User      @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  /// Nullable: a referrer can pre-mint a code without anyone having used it
+  /// yet. Once someone signs up with this code, this is populated.
+  referredId      String?   @unique
+  referred        User?     @relation("ReferralReferred", fields: [referredId], references: [id], onDelete: SetNull)
+  /// `web` | `mobile` | `email` | free-form — where the referral came from.
+  source          String?
+  /// `pending` | `awarded` | `cancelled`
+  rewardStatus    String    @default("pending")
+  /// Project-specific reward details (amount, currency, plan, transactionId…).
+  rewardMetadata  Json?
+  createdAt       DateTime  @default(now())
+  /// Set when a referredId is attached.
+  usedAt          DateTime?
+
+  @@unique([code, referredId])
+  @@index([referrerId])
+  @@index([code])
+  @@index([rewardStatus])
 }

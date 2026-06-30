@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { to: '/config/settings', labelKey: 'config.settings', defaultLabel: 'Settings' },
   { to: '/config/storage', labelKey: 'config.storage', defaultLabel: 'Storage' },
   { to: '/config/queues', labelKey: 'config.queues', defaultLabel: 'Queues' },
+  { to: '/config/referrals', labelKey: 'config.referrals', defaultLabel: 'Referrals' },
 ];
 
 /**

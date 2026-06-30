@@ -36,6 +36,14 @@ This is the durable, checked-in source of truth for the starter's boilerplate ro
 
 ## Open follow-ups (post this migration)
 
+## Extras shipped 2026-07-01
+
+- [x] `seed.ts` bootstraps `admin@example.com` (admin) + `test@example.com` (user) — password `"password"`
+- [x] Fix: `WebhooksModule` skips BullMQ entirely when `REDIS_URL` absent (was crashing boot — `BULLMQ_CONFIG` lookup against an un-registered global)
+- [x] **Referrals module** — generic per-user code + share link + admin reward hook (`docs/modules/referrals.md`)
+
+## Open follow-ups (post this migration)
+
 - [ ] Stripe provider class (env vars exist; Razorpay-only today)
 - [ ] BullMQ around `render` for batch loads
 - [ ] Mail synchronous-path template rendering (today only the queue path renders)

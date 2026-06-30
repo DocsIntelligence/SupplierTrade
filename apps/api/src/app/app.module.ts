@@ -24,6 +24,7 @@ import { MailModule } from './mail/mail.module';
 import { NotificationModule } from './notification/notification.module';
 import { OrgModule } from './org/org.module';
 import { PaymentModule } from './payment/payment.module';
+import { ReferralsModule } from './referrals/referrals.module';
 import { RenderModule } from './render/render.module';
 import { SettingsModule } from './settings/settings.module';
 import { StorageModule } from './storage/storage.module';
@@ -63,6 +64,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     TotpModule,
     WebhooksModule.forRootAsync(),
     IdempotencyModule,
+    ReferralsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -39,6 +39,7 @@ This index is the canonical entry point for any AI agent (or new contributor) th
 | 26 | totp             | TOTP 2FA via otplib + recovery codes                             | [modules/totp.md](modules/totp.md)                 | `/auth/totp/*`        | —                      |
 | 27 | webhooks         | Outbound webhooks — signed, queued, retried                      | [modules/webhooks.md](modules/webhooks.md)         | `/orgs/:id/webhooks`  | —                      |
 | 28 | idempotency      | `@Idempotent()` interceptor — replay-safe POSTs                  | [modules/idempotency.md](modules/idempotency.md)   | (DI)                  | —                      |
+| 29 | referrals        | Per-user share code + referral tracking + admin reward hook      | [modules/referrals.md](modules/referrals.md)       | `/referrals/*`, `/admin/referrals` | `/config/referrals`, `/referrals` |
 
 ## Conventions every module follows
 

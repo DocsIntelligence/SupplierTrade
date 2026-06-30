@@ -1,42 +1,48 @@
-import { DynamicModule, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DynamicModule, Logger, Module } from '@nestjs/common';
 import { OrgModule } from '../org/org.module';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksProcessor } from './webhooks.processor';
 import { WebhooksService, WEBHOOKS_QUEUE_ENABLED } from './webhooks.service';
 
 /**
- * Wires the BullMQ `webhooks` queue when REDIS_URL is set. Without Redis,
- * delivery falls back to a fire-and-forget sync HTTP call inside the service —
- * fine for dev, not for prod scale.
+ * Wires the BullMQ `webhooks` queue when `REDIS_URL` is set. Without Redis,
+ * we register NO BullMQ pieces (no queue, no processor, no BULLMQ_CONFIG) —
+ * the service still works and just runs deliveries synchronously via fetch.
+ *
+ * Mirrors `MailModule.forRootAsync()` exactly so behaviour is consistent.
  */
 @Module({})
 export class WebhooksModule {
+  private static readonly logger = new Logger(WebhooksModule.name);
+
   static forRootAsync(): DynamicModule {
+    const redisUrl = process.env['REDIS_URL'];
+
+    if (!redisUrl) {
+      this.logger.warn(
+        'REDIS_URL not set — webhook delivery will run synchronously (no retries).',
+      );
+      return {
+        module: WebhooksModule,
+        imports: [OrgModule],
+        controllers: [WebhooksController],
+        providers: [
+          { provide: WEBHOOKS_QUEUE_ENABLED, useValue: false },
+          WebhooksService,
+        ],
+        exports: [WebhooksService],
+      };
+    }
+
     return {
       module: WebhooksModule,
-      imports: [
-        OrgModule,
-        BullModule.registerQueueAsync({
-          name: 'webhooks',
-          imports: [ConfigModule],
-          inject: [ConfigService],
-          useFactory: () => ({
-            // BullModule reads connection from the global BullModule.forRoot in
-            // mail.module.ts. If REDIS_URL is missing the queue stays inert.
-          }),
-        }),
-      ],
+      imports: [OrgModule, BullModule.registerQueue({ name: 'webhooks' })],
       controllers: [WebhooksController],
       providers: [
+        { provide: WEBHOOKS_QUEUE_ENABLED, useValue: true },
         WebhooksService,
         WebhooksProcessor,
-        {
-          provide: WEBHOOKS_QUEUE_ENABLED,
-          inject: [ConfigService],
-          useFactory: (config: ConfigService) => Boolean(config.get<string>('REDIS_URL')),
-        },
       ],
       exports: [WebhooksService],
     };
