@@ -2,6 +2,48 @@
 
 Append-only record of phases that land. Newest at the top.
 
+## 2026-06-30 — Tier 1 + Tier 3 upgrade (docs/16)
+
+**All 13 items complete.** Plan: `docs/16-tier1-tier3-PLAN.md`. Tier 2 deferred (project-specific).
+
+### New Prisma models
+`AuditLog`, `Organization`, `Membership`, `Invitation`, `ApiKey`, `TwoFactor`, `WebhookEndpoint`, `WebhookDelivery`, `IdempotencyKey`. Migration `20260630175637_tier1_modules` applied.
+
+### New API modules
+- **audit** (global) — `AuditService.record()` + `@Audit({ action, targetType })` + `AuditInterceptor`. Admin query at `/admin/audit`.
+- **org** — `Organization` + `Membership` CRUD; role gating via `OrgService.assertMember`/`assertPrivileged`; creator becomes `owner`; last-owner protection.
+- **invitations** — email + token + 7-day expiry + acceptance flow. New `invitation` mail template.
+- **cron** — `@nestjs/schedule` with 4 generic jobs (idempotency.purge hourly, invitations.purge 6h, mail-logs.purge daily, audit.purge daily) + `POST /admin/cron/:name/run`.
+- **cache** (global) — `CacheService` w/ `get/set/del/wrap(key, ttl, compute)`. Redis when `REDIS_URL` set, in-process LRU fallback.
+- **api-keys** — `pak_<prefix>_<secret>` tokens; bcrypt-hashed at rest; `ApiKeyGuard` accepts `Authorization: Bearer pak_...`; raw token shown ONCE on create.
+- **totp** — RFC 6238 via `otplib`; setup → confirm → recovery codes (bcrypt-hashed, burned on use).
+- **webhooks** — HMAC-SHA256 signed deliveries (`X-Webhook-Signature: sha256=...`); BullMQ queue `webhooks` with 5 attempts + exponential backoff; sync fallback when no Redis.
+- **idempotency** (global) — `@Idempotent()` decorator + interceptor; 24h default TTL; replays cached responses by `Idempotency-Key` header.
+
+### Admin UI additions
+- `/config/storage` — file browser (uses existing `/storage/files` endpoint).
+- `/config/queues` — BullMQ counts + recent jobs (new `/admin/queues` endpoint).
+- Sidebar nav extended in `ConfigLayout`.
+- All `/config/*` routes lazy-loaded; chunk-per-page.
+
+### Infra & DX
+- `.env.example` already covered the env surface (verified).
+- `docker-compose.yml` (postgres 16 + redis 7 + minio + maildev) — local-dev stack.
+- `.github/workflows/ci.yml` already in place (verified covers lint+build+prisma).
+
+### Tests (example pattern)
+- `apps/api/src/app/lookup/lookup.service.spec.ts` — unit, mocked DB.
+- `apps/api/src/app/lookup/lookup.e2e-spec.ts` — supertest with overridden DI.
+
+### Deps added
+`@nestjs/schedule`, `otplib`, `lru-cache`.
+
+### Validation
+`pnpm nx run @org/api:build` ✅, `pnpm nx run @org/app:build` ✅, prisma generate ✅, migrate dev ✅.
+
+### Open follow-ups
+Stripe class, BullMQ-around-render, mail sync template render, `/config/audit|orgs|api-keys|webhooks|cron` UI pages (backing endpoints ready), live socket bell push, Tier 2 items.
+
 ## 2026-06-30 — Boilerplate modules migration (docs/15)
 
 **Phases A–F complete.**

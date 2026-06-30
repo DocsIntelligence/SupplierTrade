@@ -10,18 +10,35 @@ This is the durable, checked-in source of truth for the starter's boilerplate ro
 - [x] Phase A — Prisma generic models (`Notification`, `PushSubscription`, `PhoneOtp`, `UserVerification`)
 - [x] Phase B — `notification` module (in-app bell + Web Push + broadcast)
 - [x] Phase C — `verification` module (user-bound, kind-based, admin queue + decision)
-- [x] Phase D — Admin UI pages under `/config/*` (overview, users, plans, payments, ai-usage, mail-logs, notifications, verification, lookups, settings)
-- [x] Phase E — Per-module docs + AI-friendly index (`docs/00-MODULES-INDEX.md`, `docs/modules/<name>.md`)
-- [x] Phase F — Typecheck (`pnpm nx run @org/api:build`, `pnpm nx run @org/app:build`) green
-- [x] Migration doc updates (this file + `BUILD_LOG.md`)
+- [x] Phase D — Admin UI pages under `/config/*`
+- [x] Phase E — Per-module docs + AI-friendly index
+- [x] Phase F — Typecheck + lint green
+
+## Tier 1 + Tier 3 upgrade (docs/16)
+
+- [x] Plan doc: `docs/16-tier1-tier3-PLAN.md`
+- [x] Prisma models: AuditLog, Organization, Membership, Invitation, ApiKey, TwoFactor, WebhookEndpoint, WebhookDelivery, IdempotencyKey
+- [x] T1.1 — `audit` module + `@Audit()` decorator + interceptor + admin query
+- [x] T1.2 — `org` module (Organization + Membership + role gating)
+- [x] T1.3 — `invitations` module + email template + token flow
+- [x] T1.4 — `cron` module (4 generic cleanup jobs + admin run-now)
+- [x] T1.5 — `cache` module (Redis or in-process LRU)
+- [x] T1.6 — `api-keys` module + `ApiKeyGuard`
+- [x] T1.7 — `totp` module (RFC 6238 + recovery codes via otplib)
+- [x] T1.8 — `webhooks` module (HMAC-signed, BullMQ-retried)
+- [x] T1.9 — `idempotency` interceptor (`@Idempotent()`)
+- [x] T1.10 — `.env.example`, `docker-compose.yml`, `.github/workflows/ci.yml`
+- [x] T3.19 — Lazy code-split `/config/*` pages
+- [x] T3.20 — Example unit + e2e tests for `lookup`
+- [x] T3.21 — `/config/storage` + `/config/queues` admin pages + backing endpoints
+- [x] Per-module docs + INDEX update
+- [x] Typecheck + lint green
 
 ## Open follow-ups (post this migration)
 
 - [ ] Stripe provider class (env vars exist; Razorpay-only today)
-- [ ] BullMQ queue around `render` for batch loads
-- [ ] Cache layer on top of Redis (today it's queue-only)
-- [ ] Mail `synchronous` path: render template instead of using `dto.html` only
-- [ ] Storage browser admin page at `/config/storage`
-- [ ] Queue inspector admin page at `/config/queues`
-- [ ] `phone` / `email` OTP flow surfaced in the verification UI (PhoneOtp model is ready)
-- [ ] Live socket bell push (today the notification module creates the row + Web Push; live socket needs a project-specific gateway)
+- [ ] BullMQ around `render` for batch loads
+- [ ] Mail synchronous-path template rendering (today only the queue path renders)
+- [ ] `/config/audit` + `/config/orgs` + `/config/api-keys` + `/config/webhooks` + `/config/cron` UI pages (backing endpoints ready)
+- [ ] Live socket bell push (NotificationService → gateway.emitToUser)
+- [ ] Tier 2 (when needed per project): Sentry, Stripe class, Apple/Microsoft OAuth, search abstraction, React Email, Helmet/CSRF/request-id middleware, OpenAPI client gen

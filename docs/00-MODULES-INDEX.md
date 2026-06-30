@@ -30,6 +30,15 @@ This index is the canonical entry point for any AI agent (or new contributor) th
 | 17 | notification     | In-app bell + Web Push + admin broadcast                         | [modules/notification.md](modules/notification.md) | `/notifications/*`, `/push/*` | `/config/notifications` |
 | 18 | verification     | Generic identity/KYC submission + admin review                   | [modules/verification.md](modules/verification.md) | `/verification/*`, `/admin/verification/*` | `/config/verification` |
 | 19 | admin            | Stats + user role management                                     | [modules/admin.md](modules/admin.md)               | `/admin/*`            | `/admin`, `/config`    |
+| 20 | audit            | Append-only audit log + `@Audit()` decorator                     | [modules/audit.md](modules/audit.md)               | `/admin/audit`        | —                      |
+| 21 | org              | Multi-tenancy: Organization + Membership + role gating           | [modules/org.md](modules/org.md)                   | `/orgs/*`             | —                      |
+| 22 | invitations      | Invite by email, accept by token, expiry                         | [modules/invitations.md](modules/invitations.md)   | `/orgs/:id/invitations`, `/invitations/:token/accept` | — |
+| 23 | cron             | `@nestjs/schedule` — generic cleanup jobs + admin run-now        | [modules/cron.md](modules/cron.md)                 | `/admin/cron/*`       | —                      |
+| 24 | cache            | Redis-or-LRU `CacheService` w/ `wrap(key, ttl, compute)`         | [modules/cache.md](modules/cache.md)               | (DI)                  | —                      |
+| 25 | api-keys         | Personal Access Tokens + `ApiKeyGuard`                           | [modules/api-keys.md](modules/api-keys.md)         | `/me/api-keys`        | —                      |
+| 26 | totp             | TOTP 2FA via otplib + recovery codes                             | [modules/totp.md](modules/totp.md)                 | `/auth/totp/*`        | —                      |
+| 27 | webhooks         | Outbound webhooks — signed, queued, retried                      | [modules/webhooks.md](modules/webhooks.md)         | `/orgs/:id/webhooks`  | —                      |
+| 28 | idempotency      | `@Idempotent()` interceptor — replay-safe POSTs                  | [modules/idempotency.md](modules/idempotency.md)   | (DI)                  | —                      |
 
 ## Conventions every module follows
 
