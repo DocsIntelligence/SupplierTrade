@@ -7,11 +7,13 @@ import type { SendMailDto } from './dto/send-mail.dto';
 import { welcomeTemplate } from './templates/welcome.template';
 import { passwordResetTemplate } from './templates/password-reset.template';
 import { verificationTemplate } from './templates/verification.template';
+import { verificationDecisionTemplate } from './templates/verification-decision.template';
 
 const TEMPLATES: Record<string, (data: any) => string> = {
   welcome: welcomeTemplate,
   'password-reset': passwordResetTemplate,
   verification: verificationTemplate,
+  'verification-decision': verificationDecisionTemplate,
 };
 
 @Processor('mail')

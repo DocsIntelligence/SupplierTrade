@@ -8,6 +8,17 @@ import {
 } from '@org/store';
 import { ProtectedRoute } from './components/protected-route/ProtectedRoute';
 import { AdminDashboard } from './features/admin/AdminDashboard';
+import { ConfigLayout } from './features/config/ConfigLayout';
+import { ConfigOverview } from './features/config/ConfigOverview';
+import { ConfigUsers } from './features/config/ConfigUsers';
+import { ConfigPlans } from './features/config/ConfigPlans';
+import { ConfigPayments } from './features/config/ConfigPayments';
+import { ConfigAiUsage } from './features/config/ConfigAiUsage';
+import { ConfigMailLogs } from './features/config/ConfigMailLogs';
+import { ConfigNotifications } from './features/config/ConfigNotifications';
+import { ConfigVerification } from './features/config/ConfigVerification';
+import { ConfigLookups } from './features/config/ConfigLookups';
+import { ConfigSettings } from './features/config/ConfigSettings';
 import { AuthCallback } from './features/auth/callback/AuthCallback';
 import { ForgotPassword } from './features/auth/forgot-password/ForgotPassword';
 import { Login } from './features/auth/login/Login';
@@ -53,6 +64,19 @@ export function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<AdminDashboard />} />
+
+        <Route path="/config" element={<ConfigLayout />}>
+          <Route index element={<ConfigOverview />} />
+          <Route path="users" element={<ConfigUsers />} />
+          <Route path="plans" element={<ConfigPlans />} />
+          <Route path="payments" element={<ConfigPayments />} />
+          <Route path="ai-usage" element={<ConfigAiUsage />} />
+          <Route path="mail-logs" element={<ConfigMailLogs />} />
+          <Route path="notifications" element={<ConfigNotifications />} />
+          <Route path="verification" element={<ConfigVerification />} />
+          <Route path="lookups" element={<ConfigLookups />} />
+          <Route path="settings" element={<ConfigSettings />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

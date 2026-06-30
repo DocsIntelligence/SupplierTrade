@@ -15,11 +15,13 @@ import { HealthModule } from './health/health.module';
 import { AppLoggerModule } from './logger/logger.module';
 import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationModule } from './notification/notification.module';
 import { PaymentModule } from './payment/payment.module';
 import { RenderModule } from './render/render.module';
 import { SettingsModule } from './settings/settings.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { UsersModule } from './users/users.module';
     SettingsModule,
     RenderModule,
     StorageModule,
+    NotificationModule,
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

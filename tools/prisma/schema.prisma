@@ -37,11 +37,14 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  secrets    Secrets?
-  identities UserIdentity[]
-  passkeys   Passkey[]
-  wallet     UserWallet?
-  payments   Payment[]
+  secrets       Secrets?
+  identities    UserIdentity[]
+  passkeys      Passkey[]
+  wallet        UserWallet?
+  payments      Payment[]
+  notifications Notification[]
+  pushSubs      PushSubscription[]
+  verifications UserVerification[]
 
   @@index([email])
 }
@@ -474,4 +477,88 @@ model AiModelPricing {
 
   @@index([provider, model, active])
   @@index([provider, model, effectiveFrom])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NOTIFICATION + WEB PUSH (generic, boilerplate)
+// ═══════════════════════════════════════════════════════════════════
+
+/// In-app notification bell. One row per recipient per event.
+/// `type` is a free-form string (e.g. "system", "billing", "verification",
+/// "broadcast") — define your project's vocabulary in @org/utils enums.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  /// In-app path to open when tapped.
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+/// One Web Push subscription per device/browser.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  ua        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VERIFICATION (generic identity / address / kyc)
+// ═══════════════════════════════════════════════════════════════════
+
+/// One-time phone or email OTP. Raw code is hashed; only the hash is stored.
+/// In dev (no SMS provider) the code is written to the server log.
+model PhoneOtp {
+  id         String    @id @default(cuid())
+  /// Phone (E.164) or email address — the target of the OTP.
+  target     String
+  channel    String    @default("sms") // sms | email
+  codeHash   String
+  /// `verify_phone` | `verify_email` | `login` | `reset_password` etc.
+  purpose    String    @default("verify_phone")
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([target, purpose])
+}
+
+/// Generic user-level verification record. Replace Matrimonial's
+/// Profile-bound verification with a User-bound one. `kind` is free-form
+/// (e.g. "identity", "address", "email", "phone", "kyc"); kind-specific
+/// fields live inside `payload` JSON. `evidenceKey` is a storage object key
+/// — purge after decision per retention policy.
+model UserVerification {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String
+  status       String    @default("pending") // pending | auto_passed | auto_failed | approved | rejected
+  payload      Json?
+  evidenceKey  String?
+  providerRef  String?
+  reviewedBy   String?
+  decidedAt    DateTime?
+  rejectReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, kind])
+  @@index([status])
 }

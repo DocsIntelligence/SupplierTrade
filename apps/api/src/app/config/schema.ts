@@ -89,6 +89,11 @@ export const envSchema = z.object({
   STORAGE_SECRET_KEY: z.string().min(1).optional(),
   STORAGE_BUCKET: z.string().min(1).optional(),
   STORAGE_PUBLIC_URL: z.string().url().optional(), // Public URL prefix for files
+
+  // ── Web Push / VAPID (optional — warn if missing) ─────────────────────
+  VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().min(1).optional(),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -140,6 +145,10 @@ const OPTIONAL_GROUPS = [
       'STORAGE_SECRET_KEY',
       'STORAGE_BUCKET',
     ],
+  },
+  {
+    name: 'Web Push (VAPID)',
+    fields: ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'],
   },
 ] as const;
 
