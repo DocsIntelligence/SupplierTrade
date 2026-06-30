@@ -9,6 +9,10 @@ const prisma = new PrismaClient();
 /**
  * Idempotently upsert a user with a bcrypt-hashed password. Reuses the same
  * shape `auth.service.register` produces (User + Secrets in one go).
+ *
+ * Handles a leftover row that already owns the desired `username` under a
+ * different `email` by reassigning the email + role onto that row (rather than
+ * crashing on the unique constraint).
  */
 async function upsertUser(opts: {
   email: string;
@@ -18,18 +22,45 @@ async function upsertUser(opts: {
   role: 'admin' | 'user';
 }) {
   const hash = await bcrypt.hash(opts.password, 10);
-  const user = await prisma.user.upsert({
-    where: { email: opts.email },
-    update: { role: opts.role, name: opts.name, emailVerified: true },
-    create: {
-      email: opts.email,
-      username: opts.username,
-      name: opts.name,
-      role: opts.role,
-      provider: 'email',
-      emailVerified: true,
-    },
-  });
+
+  const byEmail = await prisma.user.findUnique({ where: { email: opts.email } });
+  const byUsername = await prisma.user.findUnique({ where: { username: opts.username } });
+
+  let user;
+  if (byEmail) {
+    user = await prisma.user.update({
+      where: { id: byEmail.id },
+      data: {
+        username: opts.username,
+        name: opts.name,
+        role: opts.role,
+        emailVerified: true,
+      },
+    });
+  } else if (byUsername) {
+    // Someone else owns this username (likely a stale dev row) — rebrand it.
+    user = await prisma.user.update({
+      where: { id: byUsername.id },
+      data: {
+        email: opts.email,
+        name: opts.name,
+        role: opts.role,
+        emailVerified: true,
+      },
+    });
+  } else {
+    user = await prisma.user.create({
+      data: {
+        email: opts.email,
+        username: opts.username,
+        name: opts.name,
+        role: opts.role,
+        provider: 'email',
+        emailVerified: true,
+      },
+    });
+  }
+
   await prisma.secrets.upsert({
     where: { userId: user.id },
     update: { password: hash },
