@@ -16,12 +16,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const status = useAppSelector(selectAuthStatus);
   const location = useLocation();
 
-  // Show loading only while the initial fetchMe is in flight
-  if (status === 'pending') {
+  // Wait while the initial auth check hasn't resolved yet. `idle` means the
+  // app just mounted (e.g. a hard refresh on a deep route) and fetchMe is about
+  // to run; `pending` means it's in flight. Redirecting during these states
+  // would drop the current URL and bounce the user to /dashboard after login.
+  if (status === 'idle' || status === 'pending') {
     return <PageLoader />;
   }
 
-  // If not authenticated (idle = never tried, failed = 401, succeeded but no user)
+  // Auth check has resolved: redirect only if genuinely unauthenticated
+  // (failed = 401, or succeeded with no user).
   if (!isAuth) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }

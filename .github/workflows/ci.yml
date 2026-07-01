@@ -66,6 +66,9 @@ jobs:
       - name: Run migrations
         run: pnpm prisma:migrate
 
+      - name: Validate domain configs
+        run: pnpm domain:validate
+
       - name: Lint
         run: pnpm nx run-many -t lint
 

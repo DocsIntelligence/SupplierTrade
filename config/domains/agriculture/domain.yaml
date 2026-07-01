@@ -1,0 +1,84 @@
+# Agriculture — agri-output / produce (launch sub-vertical, decided 2026-07-01).
+# Config-as-code (DOMAIN-ARCHITECTURE.md §0/§2/§8). Only references plugin keys
+# that are REGISTERED in code (verification: gst, litigation; qc: grain_grade;
+# guards/actions: built-ins). Adding fssai / seed_license / apmc_mandi etc. =
+# implement+register the adapter first, THEN reference it here (fail-fast §5).
+domain:
+  key: agriculture
+  name: Agriculture (Produce)
+  status: active
+  version: 1
+  locale_defaults: { lang: hi, fallback: en }
+
+  entity_schemas:
+    supplier: { $ref: schemas/supplier.schema.json }
+    listing: { $ref: schemas/listing.schema.json }
+
+  supplier_types:
+    - key: fpo
+      label: Farmer Producer Org
+      kyc_profile: entity
+      required_documents:
+        - { key: fpo_registration_cert, accepts: [pdf, image], required: true }
+        - { key: pan_business, accepts: [pdf, image], required: true }
+        - { key: cancelled_cheque, accepts: [image], required: true }
+      media_capture:
+        - { key: produce_photos, type: image, min: 3, geotag: true, required: false }
+      verification_signals:
+        - { key: gst, required: true }
+        - { key: litigation, required: true }
+    - key: trader
+      label: Commodity Trader
+      kyc_profile: entity
+      required_documents:
+        - { key: gst_certificate, accepts: [pdf, image], required: true }
+        - { key: pan_business, accepts: [pdf, image], required: true }
+      media_capture:
+        - { key: storefront_photo, type: image, geotag: true, required: false }
+      verification_signals:
+        - { key: gst, required: true }
+        - { key: litigation, required: true }
+    - key: processor
+      label: Processor / Aggregator
+      kyc_profile: entity
+      required_documents:
+        - { key: gst_certificate, accepts: [pdf, image], required: true }
+        - { key: pan_business, accepts: [pdf, image], required: true }
+      verification_signals:
+        - { key: gst, required: true }
+        - { key: litigation, required: true }
+
+  verification_profile:
+    required_signals:
+      - { key: gst, required: true }
+      - { key: litigation, required: true }
+    thresholds:
+      min_signals_for_verified: 1
+
+  qc_profile:
+    scorer: grain_grade
+    grading_scale: [FAQ, Grade A, Grade B, Reject]
+    criteria:
+      - { key: moisture_pct, type: number, max: 14 }
+      - { key: foreign_matter_pct, type: number, max: 2 }
+      - { key: broken_pct, type: number, max: 3 }
+      - { key: admixture_pct, type: number, max: 1 }
+    sampling: { method: lot_based, sample_kg: 1 }
+
+  workflow: { $ref: workflows/agriculture.workflow.yaml }
+
+  fees:
+    verification_fee_paise: 0
+    qc_fee_paise: 0
+    escrow_take_rate_bps: 0
+
+  feature_flags:
+    whatsapp_rfq: true
+    qc_enabled: true
+    escrow_enabled: false
+    ondc_sourcing: false
+
+  terminology:
+    supplier: Supplier / FPO
+    listing: Produce Lot
+    rfq: Procurement Requirement

@@ -1,3 +1,5 @@
+'use client';
+
 import { LOCALE_LIST } from '@org/utils';
 import { useTranslation } from 'react-i18next';
 

@@ -33,7 +33,10 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.enableShutdownHooks();
+  // Signals are handled explicitly in setupGracefulShutdown (below), which
+  // calls app.close() — that runs all onModuleDestroy/onApplicationShutdown
+  // hooks (e.g. DB disconnect). We don't also call enableShutdownHooks() to
+  // avoid two signal listeners racing to close the app.
 
   // ─── Swagger ────────────────────────────────────────────────────────────
   if (nodeEnv !== 'production') {
@@ -76,6 +79,47 @@ async function bootstrap() {
 
   await app.listen(port);
   Logger.log(`🚀 API running at http://localhost:${port}/${globalPrefix}`);
+
+  setupGracefulShutdown(app, port);
 }
 
-bootstrap();
+/**
+ * Close the HTTP server (releasing the port) and run Nest shutdown hooks on
+ * SIGINT/SIGTERM, then exit. A force-exit timer guards against a hung close
+ * (e.g. a lingering DB/Redis handle keeping the event loop alive) so the port
+ * never stays bound. SIGKILL (`kill -9`) can't be caught — use SIGTERM/SIGINT.
+ */
+function setupGracefulShutdown(
+  app: Awaited<ReturnType<typeof NestFactory.create>>,
+  port: number,
+) {
+  let shuttingDown = false;
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return; // ignore repeated signals
+    shuttingDown = true;
+    Logger.log(`Received ${signal} — shutting down gracefully…`);
+
+    // Hard stop if graceful close hasn't finished in time; `unref` so the timer
+    // itself doesn't keep the process alive.
+    const force = setTimeout(() => {
+      Logger.error('Graceful shutdown timed out — forcing exit');
+      process.exit(1);
+    }, 10_000);
+    force.unref();
+
+    try {
+      await app.close();
+      Logger.log(`Port ${port} released. Bye 👋`);
+      process.exit(0);
+    } catch (err) {
+      Logger.error(`Error during shutdown: ${(err as Error).message}`);
+      process.exit(1);
+    }
+  };
+
+  (['SIGINT', 'SIGTERM', 'SIGHUP'] as NodeJS.Signals[]).forEach((sig) =>
+    process.once(sig, () => void shutdown(sig)),
+  );
+}
+
+void bootstrap();

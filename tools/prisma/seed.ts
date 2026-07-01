@@ -238,8 +238,8 @@ async function main() {
       continue;
     }
 
-    const existingValues = new Set(existing.values.map((v) => v.value));
-    const newValues = group.values.filter((v) => !existingValues.has(v.value));
+    const existingByValue = new Map(existing.values.map((v) => [v.value, v]));
+    const newValues = group.values.filter((v) => !existingByValue.has(v.value));
 
     if (newValues.length > 0) {
       // Note: newValues is already filtered to values not present, and
@@ -252,6 +252,18 @@ async function main() {
       );
     } else {
       console.log(`  ✓ Lookup "${group.key}" — up to date`);
+    }
+
+    // Backfill i18n metadata onto existing values (idempotent) so localized
+    // labels land even on lookups seeded before translations were added.
+    for (const v of group.values) {
+      const current = existingByValue.get(v.value);
+      if (v.metadata && current && !current.metadata) {
+        await prisma.lookupValue.update({
+          where: { id: current.id },
+          data: { metadata: v.metadata },
+        });
+      }
     }
   }
 

@@ -16,7 +16,7 @@ import { ResetPassword } from './features/auth/reset-password/ResetPassword';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { Settings } from './features/settings/Settings';
 import { AuthLayout } from './layouts/auth-layout/AuthLayout';
-import { MainLayout } from './layouts/main-layout/MainLayout';
+import { DashboardLayout } from './layouts/dashboard-layout/DashboardLayout';
 
 /**
  * Lazy-load a NAMED export as a route element so each admin/config page lives
@@ -49,6 +49,11 @@ const ConfigQueues = lazyNamed(() => import('./features/config/ConfigQueues'), '
 const ConfigReferrals = lazyNamed(() => import('./features/config/ConfigReferrals'), 'ConfigReferrals');
 const Referrals = lazyNamed(() => import('./features/referrals/Referrals'), 'Referrals');
 
+// SupplierTrade — operational domain UI (suppliers, verification, listings, QC)
+const SuppliersList = lazyNamed(() => import('./features/suppliertrade/SuppliersList'), 'SuppliersList');
+const SupplierDetail = lazyNamed(() => import('./features/suppliertrade/SupplierDetail'), 'SupplierDetail');
+const Onboarding = lazyNamed(() => import('./features/onboarding/Onboarding'), 'Onboarding');
+
 export function App() {
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectAuthStatus);
@@ -75,12 +80,16 @@ export function App() {
         <Route
           element={
             <ProtectedRoute>
-              <MainLayout />
+              <DashboardLayout />
             </ProtectedRoute>
           }
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/suppliers" element={<SuppliersList />} />
+          <Route path="/suppliers/new" element={<Navigate to="/onboarding" replace />} />
+          <Route path="/suppliers/:id" element={<SupplierDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/referrals" element={<Referrals />} />

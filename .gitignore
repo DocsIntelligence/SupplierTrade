@@ -69,3 +69,6 @@ tools/prisma/**/*.db-journal
 
 # Claude Code runtime artifacts
 .claude/scheduled_tasks.lock
+
+# Local storage fallback (dev uploads)
+.data/

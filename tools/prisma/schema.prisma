@@ -24,17 +24,17 @@ datasource db {
 // ─── User ──────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String
-  email         String    @unique
-  username      String    @unique
+  email         String   @unique
+  username      String   @unique
   picture       String?
-  provider      String    @default("email")
-  role          String    @default("user")
-  emailVerified Boolean   @default(false)
-  locale        String    @default("en-US")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  provider      String   @default("email")
+  role          String   @default("user")
+  emailVerified Boolean  @default(false)
+  locale        String   @default("en-US")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   secrets         Secrets?
@@ -46,13 +46,13 @@ model User {
   pushSubs        PushSubscription[]
   verifications   UserVerification[]
   memberships     Membership[]
-  invitationsSent Invitation[]      @relation("InvitationInviter")
+  invitationsSent Invitation[]       @relation("InvitationInviter")
   apiKeys         ApiKey[]
   twoFactor       TwoFactor?
   auditLogs       AuditLog[]
   idempotencyKeys IdempotencyKey[]
-  referralsMade   Referral[]        @relation("ReferralReferrer")
-  referredBy      Referral?         @relation("ReferralReferred")
+  referralsMade   Referral[]         @relation("ReferralReferrer")
+  referredBy      Referral?          @relation("ReferralReferred")
 
   @@index([email])
 }
@@ -60,16 +60,16 @@ model User {
 // ─── Secrets (1:1 with User) ───────────────────────────────────
 
 model Secrets {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  password             String?
-  refreshToken         String?
-  resetToken           String?
-  resetTokenExpiresAt  DateTime?
-  verificationToken    String?
-  lastSignedIn         DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  password            String?
+  refreshToken        String?
+  resetToken          String?
+  resetTokenExpiresAt DateTime?
+  verificationToken   String?
+  lastSignedIn        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -250,18 +250,18 @@ model LookupValue {
 // ─── Mail Queue & Logs ─────────────────────────────────────────
 
 model MailLog {
-  id          String   @id @default(cuid())
-  to          String
-  subject     String
-  template    String?
-  body        String?
-  status      String   @default("queued") // "queued" | "sent" | "failed"
-  attempts    Int      @default(0)
-  error       String?
-  metadata    Json?
-  sentAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  to        String
+  subject   String
+  template  String?
+  body      String?
+  status    String    @default("queued") // "queued" | "sent" | "failed"
+  attempts  Int       @default(0)
+  error     String?
+  metadata  Json?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -389,10 +389,10 @@ model AiUsage {
   // ── Filtering + retention ─────────────────────────────────────
   /// Free-form labels for search / cost tagging (`feature:invoice`,
   /// `experiment:v2`, `customer:acme`, …). Stored as a JSON array of strings.
-  tags          Json     @default("[]")
+  tags          Json @default("[]")
   /// GDPR / compliance: how long this row should live. A nightly job purges
   /// rows whose `createdAt + retentionDays` is in the past.
-  retentionDays Int      @default(365)
+  retentionDays Int  @default(365)
 
   /// Provider-specific extras + caller hints. Keep small (<8 KB) — anything
   /// big belongs as a column or external blob.
@@ -431,7 +431,7 @@ model Setting {
   /// Required for org/user scope; empty string sentinel for system. Non-null
   /// so the compound unique `(scope, scopeId, key)` enforces "one override
   /// per scope+key".
-  scopeId String  @default("")
+  scopeId String @default("")
 
   /// JSON value — booleans, numbers, strings, arrays, objects all fit here.
   value Json
@@ -577,9 +577,9 @@ model UserVerification {
 
 /// Immutable record of who did what. Append-only; never edit.
 model AuditLog {
-  id         String   @id @default(cuid())
+  id         String        @id @default(cuid())
   actorId    String?
-  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
   orgId      String?
   org        Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   action     String
@@ -589,7 +589,7 @@ model AuditLog {
   after      Json?
   ip         String?
   ua         String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime      @default(now())
 
   @@index([orgId, createdAt])
   @@index([actorId, createdAt])
@@ -612,32 +612,32 @@ model Organization {
 }
 
 model Membership {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   orgId     String
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   /// `owner` | `admin` | `member` | custom
-  role      String   @default("member")
-  createdAt DateTime @default(now())
+  role      String       @default("member")
+  createdAt DateTime     @default(now())
 
   @@unique([userId, orgId])
   @@index([orgId])
 }
 
 model Invitation {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   orgId       String
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   email       String
-  role        String    @default("member")
+  role        String       @default("member")
   /// SHA-256 hash of the token; raw token is sent in email only.
-  tokenHash   String    @unique
+  tokenHash   String       @unique
   invitedById String?
-  invitedBy   User?     @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedBy   User?        @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: SetNull)
   expiresAt   DateTime
   acceptedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime     @default(now())
 
   @@index([orgId, email])
   @@index([email])
@@ -650,20 +650,20 @@ model Invitation {
 /// Long-lived token for programmatic access. Token format: `pak_<prefix>_<random>`.
 /// Only the bcrypt hash is stored; the raw token is shown once at creation.
 model ApiKey {
-  id         String    @id @default(cuid())
+  id         String        @id @default(cuid())
   userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   orgId      String?
   org        Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
   name       String
   /// Public prefix shown in lists; uniqueness check + fast lookup before bcrypt compare.
-  prefix     String    @unique
+  prefix     String        @unique
   tokenHash  String
-  scopes     Json      @default("[]")
+  scopes     Json          @default("[]")
   lastUsedAt DateTime?
   expiresAt  DateTime?
   revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime      @default(now())
 
   @@index([userId])
 }
@@ -673,17 +673,17 @@ model ApiKey {
 // ═══════════════════════════════════════════════════════════════════
 
 model TwoFactor {
-  id                 String    @id @default(cuid())
-  userId             String    @unique
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Base32 TOTP secret, AES-encrypted at rest in your project (left plaintext in starter).
-  secret             String
-  enabled            Boolean   @default(false)
+  secret            String
+  enabled           Boolean   @default(false)
   /// Array of bcrypt hashes — burn a code on use.
-  recoveryCodesHash  Json      @default("[]")
-  confirmedAt        DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  recoveryCodesHash Json      @default("[]")
+  confirmedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -691,17 +691,17 @@ model TwoFactor {
 // ═══════════════════════════════════════════════════════════════════
 
 model WebhookEndpoint {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   orgId     String?
   org       Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
   url       String
   /// Shared secret used to sign deliveries (HMAC-SHA256).
   secret    String
   /// Array of event names this endpoint subscribes to. `["*"]` = all events.
-  events    Json     @default("[]")
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  events    Json          @default("[]")
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   deliveries WebhookDelivery[]
 
@@ -709,19 +709,19 @@ model WebhookEndpoint {
 }
 
 model WebhookDelivery {
-  id             String    @id @default(cuid())
+  id             String          @id @default(cuid())
   endpointId     String
   endpoint       WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
   event          String
   payload        Json
   /// `pending` | `success` | `failed` | `retrying`
-  status         String    @default("pending")
-  attempt        Int       @default(0)
+  status         String          @default("pending")
+  attempt        Int             @default(0)
   responseStatus Int?
   responseBody   String?
   nextAttemptAt  DateTime?
   deliveredAt    DateTime?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime        @default(now())
 
   @@index([endpointId, createdAt])
   @@index([status, nextAttemptAt])
@@ -764,27 +764,225 @@ model IdempotencyKey {
 /// decides WHEN to award (e.g. after first payment) and writes the actual
 /// credit/wallet adjustment.
 model Referral {
-  id              String    @id @default(cuid())
+  id             String    @id @default(cuid())
   /// Short shareable code, unique across the system (8–10 chars).
-  code            String
-  referrerId      String
-  referrer        User      @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  code           String
+  referrerId     String
+  referrer       User      @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
   /// Nullable: a referrer can pre-mint a code without anyone having used it
   /// yet. Once someone signs up with this code, this is populated.
-  referredId      String?   @unique
-  referred        User?     @relation("ReferralReferred", fields: [referredId], references: [id], onDelete: SetNull)
+  referredId     String?   @unique
+  referred       User?     @relation("ReferralReferred", fields: [referredId], references: [id], onDelete: SetNull)
   /// `web` | `mobile` | `email` | free-form — where the referral came from.
-  source          String?
+  source         String?
   /// `pending` | `awarded` | `cancelled`
-  rewardStatus    String    @default("pending")
+  rewardStatus   String    @default("pending")
   /// Project-specific reward details (amount, currency, plan, transactionId…).
-  rewardMetadata  Json?
-  createdAt       DateTime  @default(now())
+  rewardMetadata Json?
+  createdAt      DateTime  @default(now())
   /// Set when a referredId is attached.
-  usedAt          DateTime?
+  usedAt         DateTime?
 
   @@unique([code, referredId])
   @@index([referrerId])
   @@index([code])
   @@index([rewardStatus])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SUPPLIERTRADE — multi-vertical domain platform
+// ═══════════════════════════════════════════════════════════════════
+// Status/grade/type fields are plain `String` (SQLite has no native enums);
+// their allowed values live as const unions in `@org/utils`
+// (libs/shared/utils/src/lib/enums.ts). Variable per-domain entity fields
+// are stored in `attributes Json` and validated server-side against the
+// domain's JSON Schema on write (see DOMAIN-ARCHITECTURE.md §3).
+// Every domain-scoped row carries `domainKey`. See docs/PLANNING.md §7.
+
+/// A vertical (e.g. "agriculture"). `configJson` is the active published
+/// snapshot; immutable history lives in DomainVersion.
+model Domain {
+  key               String   @id
+  name              String
+  /// draft | active | archived
+  status            String   @default("draft")
+  /// Current published config version number.
+  version           Int      @default(1)
+  configJson        Json
+  metaSchemaVersion String   @default("1")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  versions DomainVersion[]
+
+  @@index([status])
+}
+
+/// Immutable published config snapshot. In-flight workflows pin the version
+/// they started on (WorkflowInstance.workflowVersion).
+model DomainVersion {
+  id          String   @id @default(cuid())
+  domainKey   String
+  domain      Domain   @relation(fields: [domainKey], references: [key], onDelete: Cascade)
+  version     Int
+  configJson  Json
+  publishedAt DateTime @default(now())
+
+  @@unique([domainKey, version])
+  @@index([domainKey])
+}
+
+/// A verified party in a domain. `supplierType` selects the actor profile
+/// (documents/media/signals) within the domain config. `orgId` links to the
+/// generic Organization when the supplier is an org account.
+model Supplier {
+  id           String    @id @default(cuid())
+  domainKey    String
+  /// e.g. "fpo" | "trader" | "processor" | "farmer" | "business" — from domain config.
+  supplierType String
+  orgId        String?
+  gstin        String?
+  legalName    String
+  /// draft | submitted | verifying | verified | flagged | ... (workflow state mirror)
+  status       String    @default("draft")
+  attributes   Json
+  consentAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  documents     SupplierDocument[]
+  media         MediaAsset[]
+  listings      Listing[]
+  verifications VerificationReport[]
+
+  @@index([domainKey, supplierType])
+  @@index([domainKey, status])
+  @@index([orgId])
+}
+
+/// A produce/input lot or other sellable, with domain-defined attributes.
+model Listing {
+  id         String   @id @default(cuid())
+  domainKey  String
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  status     String   @default("draft")
+  attributes Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  qcJobs QcJob[]
+
+  @@index([domainKey, status])
+  @@index([supplierId])
+}
+
+/// A running state-machine instance interpreted by the generic WorkflowEngine.
+/// `workflowVersion` pins the config version so republishing config never
+/// breaks live flows.
+model WorkflowInstance {
+  id              String   @id @default(cuid())
+  domainKey       String
+  workflowVersion Int
+  /// "supplier" | "listing" | ...
+  subjectType     String
+  subjectId       String
+  currentState    String
+  contextJson     Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events WorkflowEvent[]
+
+  @@unique([subjectType, subjectId])
+  @@index([domainKey, currentState])
+}
+
+/// Typed, per-instance projection of a transition. The generic AuditLog also
+/// records every transition; this is the workflow-scoped view.
+model WorkflowEvent {
+  id         String           @id @default(cuid())
+  instanceId String
+  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  fromState  String
+  toState    String
+  event      String
+  actor      String?
+  createdAt  DateTime         @default(now())
+
+  @@index([instanceId])
+}
+
+/// Graded verification result (NEVER a binary "safe" — PLANNING GUARDRAIL #3).
+/// `signalsJson` holds per-signal { status, evidence, summary }.
+model VerificationReport {
+  id          String   @id @default(cuid())
+  domainKey   String
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  /// graded: verified | flagged | insufficient
+  status      String
+  signalsJson Json
+  summary     String?
+  createdAt   DateTime @default(now())
+
+  @@index([domainKey, supplierId])
+  @@index([supplierId, createdAt])
+}
+
+/// A quality-control job scored by a registered QcScorer.
+model QcJob {
+  id                  String   @id @default(cuid())
+  domainKey           String
+  listingId           String
+  listing             Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  /// QcScorerRegistry key, e.g. "grain_grade".
+  scorer              String
+  criteriaResultsJson Json
+  /// scorer output grade, e.g. "FAQ" | "Grade A" | "Reject".
+  grade               String?
+  /// pending | scored | failed
+  status              String   @default("pending")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([domainKey, status])
+  @@index([listingId])
+}
+
+/// A KYC/compliance document required by the supplier_type config. File bytes
+/// live in object storage (MinIO/S3); `fileRef` is the storage key.
+model SupplierDocument {
+  id               String   @id @default(cuid())
+  supplierId       String
+  supplier         Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  domainKey        String
+  /// matches a key in supplier_type.required_documents
+  docKey           String
+  fileRef          String
+  mime             String
+  /// pending | accepted | rejected
+  status           String   @default("pending")
+  verifiedBySignal String?
+  uploadedAt       DateTime @default(now())
+
+  @@index([supplierId, docKey])
+}
+
+/// Captured media (photo/video), optionally geotagged, per supplier_type config.
+model MediaAsset {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  domainKey  String
+  /// matches a key in supplier_type.media_capture
+  mediaKey   String
+  /// image | video
+  type       String
+  fileRef    String
+  geoLat     Float?
+  geoLng     Float?
+  capturedAt DateTime @default(now())
+
+  @@index([supplierId, mediaKey])
 }

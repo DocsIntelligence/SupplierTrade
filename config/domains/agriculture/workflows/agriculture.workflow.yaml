@@ -1,0 +1,33 @@
+# Agriculture workflow (DOMAIN-ARCHITECTURE.md §4). Interpreted by the generic
+# WorkflowEngine. Every guard/action below is registered in code
+# (GuardRegistry / ActionRegistry); `feature.*` reads domain.feature_flags.
+workflow:
+  initial: draft
+  states:
+    - draft
+    - submitted
+    - verifying
+    - verified
+    - flagged
+    - qc_pending
+    - qc_passed
+    - qc_failed
+    - escrow_active
+    - completed
+    - disputed
+
+  transitions:
+    - { from: draft, to: submitted, on: submit, guard: required_fields_present }
+    - { from: submitted, to: verifying, on: start_verification }
+    - { from: verifying, to: verified, on: verification_done, guard: signals_meet_threshold }
+    - { from: verifying, to: flagged, on: verification_done, guard: signals_below_threshold }
+    - { from: verified, to: qc_pending, on: request_qc, guard: feature.qc_enabled }
+    - { from: qc_pending, to: qc_passed, on: qc_signoff, guard: qc_score_pass }
+    - { from: qc_pending, to: qc_failed, on: qc_signoff, guard: qc_score_fail }
+    - { from: qc_passed, to: escrow_active, on: fund_escrow, guard: feature.escrow_enabled, action: create_escrow_order }
+    - { from: escrow_active, to: completed, on: release_escrow, action: release_milestone }
+    - { from: "*", to: disputed, on: open_dispute, action: open_dispute_case }
+
+  required_artifacts_by_state:
+    verified: [gst, litigation]
+    qc_passed: [inspection_report]

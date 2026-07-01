@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "agriculture/supplier.schema.json",
+  "title": "Agriculture supplier attributes",
+  "description": "Validates Supplier.attributes for the agriculture domain (DOMAIN-ARCHITECTURE.md §3). Reference-data fields carry `x-lookup` (options come from the lookup module) and `x-widget` (how the form renders).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["deals_in", "state"],
+  "properties": {
+    "deals_in": {
+      "type": "array",
+      "title": "Commodities dealt in",
+      "description": "Select all that apply.",
+      "x-widget": "multiselect",
+      "x-lookup": "agri-commodities",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "state": {
+      "type": "string",
+      "title": "State",
+      "x-widget": "select",
+      "x-lookup": "indian-states"
+    },
+    "district": {
+      "type": "string",
+      "title": "District"
+    },
+    "apmc_market": {
+      "type": "string",
+      "title": "APMC / Mandi name"
+    },
+    "annual_volume_mt": {
+      "type": "number",
+      "title": "Annual volume (metric tonnes)",
+      "minimum": 0
+    },
+    "warehouse_capacity_mt": {
+      "type": "number",
+      "title": "Warehouse capacity (MT)",
+      "minimum": 0
+    }
+  }
+}

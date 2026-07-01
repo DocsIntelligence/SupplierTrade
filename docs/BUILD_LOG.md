@@ -2,6 +2,12 @@
 
 Append-only record of phases that land. Newest at the top.
 
+## 2026-07-01 — Domain config CI validation
+
+- Added `pnpm domain:validate` (`tools/scripts/validate-domain-configs.ts`) to load every config under `config/domains`, validate against `domain.meta.schema.json`, and assert every referenced verification adapter, QC scorer, workflow guard, and action key is registered.
+- Wired the check into CI after migrations so config-as-code failures are caught before build/deploy.
+- Added module docs and index entries for the SupplierTrade platform modules: `platform`, `suppliers`, `listings`, `verification-engine`, and `qc`.
+
 ## 2026-07-01 — Referrals + seed users + webhooks-no-redis boot fix
 
 - **`referrals` module** — new `Referral` Prisma model + migration `referrals`. `ReferralsService.getMyCode(userId)` lazily assigns a stable 8-char code per user; `attachReferred(code, referredUserId)` links a signup to its referrer (idempotent + rejects self-referral). Stats + admin list + `markRewarded(id, metadata?)` hook. UI: `/referrals` (per-user share + stats) and `/config/referrals` (admin list + mark-awarded). Reward decision is left to the consuming project — boilerplate tracks status only. Docs in `docs/modules/referrals.md`. Index updated.
@@ -13,9 +19,11 @@ Append-only record of phases that land. Newest at the top.
 **All 13 items complete.** Plan: `docs/16-tier1-tier3-PLAN.md`. Tier 2 deferred (project-specific).
 
 ### New Prisma models
+
 `AuditLog`, `Organization`, `Membership`, `Invitation`, `ApiKey`, `TwoFactor`, `WebhookEndpoint`, `WebhookDelivery`, `IdempotencyKey`. Migration `20260630175637_tier1_modules` applied.
 
 ### New API modules
+
 - **audit** (global) — `AuditService.record()` + `@Audit({ action, targetType })` + `AuditInterceptor`. Admin query at `/admin/audit`.
 - **org** — `Organization` + `Membership` CRUD; role gating via `OrgService.assertMember`/`assertPrivileged`; creator becomes `owner`; last-owner protection.
 - **invitations** — email + token + 7-day expiry + acceptance flow. New `invitation` mail template.
@@ -27,27 +35,33 @@ Append-only record of phases that land. Newest at the top.
 - **idempotency** (global) — `@Idempotent()` decorator + interceptor; 24h default TTL; replays cached responses by `Idempotency-Key` header.
 
 ### Admin UI additions
+
 - `/config/storage` — file browser (uses existing `/storage/files` endpoint).
 - `/config/queues` — BullMQ counts + recent jobs (new `/admin/queues` endpoint).
 - Sidebar nav extended in `ConfigLayout`.
 - All `/config/*` routes lazy-loaded; chunk-per-page.
 
 ### Infra & DX
+
 - `.env.example` already covered the env surface (verified).
 - `docker-compose.yml` (postgres 16 + redis 7 + minio + maildev) — local-dev stack.
 - `.github/workflows/ci.yml` already in place (verified covers lint+build+prisma).
 
 ### Tests (example pattern)
+
 - `apps/api/src/app/lookup/lookup.service.spec.ts` — unit, mocked DB.
 - `apps/api/src/app/lookup/lookup.e2e-spec.ts` — supertest with overridden DI.
 
 ### Deps added
+
 `@nestjs/schedule`, `otplib`, `lru-cache`.
 
 ### Validation
+
 `pnpm nx run @org/api:build` ✅, `pnpm nx run @org/app:build` ✅, prisma generate ✅, migrate dev ✅.
 
 ### Open follow-ups
+
 Stripe class, BullMQ-around-render, mail sync template render, `/config/audit|orgs|api-keys|webhooks|cron` UI pages (backing endpoints ready), live socket bell push, Tier 2 items.
 
 ## 2026-06-30 — Boilerplate modules migration (docs/15)

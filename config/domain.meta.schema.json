@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://suppliertrade/domain.meta.schema.json",
+  "title": "Domain config meta-schema",
+  "description": "Validates a parsed (ref-inlined) DomainConfig. See DOMAIN-ARCHITECTURE.md §2. Plugin-key existence is enforced separately by DomainConfigValidator.",
+  "type": "object",
+  "required": ["key", "name", "status", "version"],
+  "additionalProperties": true,
+  "properties": {
+    "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["draft", "active", "archived"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "locale_defaults": { "type": "object" },
+    "entity_schemas": {
+      "type": "object",
+      "properties": {
+        "supplier": { "type": ["object", "null"] },
+        "listing": { "type": ["object", "null"] }
+      }
+    },
+    "supplier_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "label"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "label": { "type": "string" },
+          "kyc_profile": { "type": "string" },
+          "required_documents": { "type": "array", "items": { "$ref": "#/$defs/docReq" } },
+          "media_capture": { "type": "array", "items": { "$ref": "#/$defs/mediaReq" } },
+          "verification_signals": { "type": "array", "items": { "$ref": "#/$defs/signalRef" } }
+        }
+      }
+    },
+    "verification_profile": {
+      "type": "object",
+      "required": ["required_signals"],
+      "properties": {
+        "required_signals": { "type": "array", "items": { "$ref": "#/$defs/signalRef" } },
+        "thresholds": {
+          "type": "object",
+          "properties": {
+            "min_signals_for_verified": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "qc_profile": {
+      "type": "object",
+      "required": ["scorer"],
+      "properties": {
+        "scorer": { "type": "string" },
+        "grading_scale": { "type": "array", "items": { "type": "string" } },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "type"],
+            "properties": {
+              "key": { "type": "string" },
+              "type": { "type": "string" },
+              "max": { "type": "number" },
+              "min": { "type": "number" }
+            }
+          }
+        },
+        "sampling": { "type": "object" }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "required": ["initial", "states", "transitions"],
+      "properties": {
+        "initial": { "type": "string" },
+        "states": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "on"],
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "on": { "type": "string" },
+              "guard": { "type": "string" },
+              "action": { "type": "string" }
+            }
+          }
+        },
+        "required_artifacts_by_state": { "type": "object" }
+      }
+    },
+    "fees": { "type": "object" },
+    "feature_flags": { "type": "object" },
+    "terminology": { "type": "object" }
+  },
+  "$defs": {
+    "signalRef": {
+      "type": "object",
+      "required": ["key"],
+      "properties": {
+        "key": { "type": "string" },
+        "required": { "type": "boolean" },
+        "required_if": { "type": "string" }
+      }
+    },
+    "docReq": {
+      "type": "object",
+      "required": ["key"],
+      "properties": {
+        "key": { "type": "string" },
+        "accepts": { "type": "array", "items": { "type": "string" } },
+        "required": { "type": "boolean" },
+        "required_if": { "type": "string" }
+      }
+    },
+    "mediaReq": {
+      "type": "object",
+      "required": ["key", "type"],
+      "properties": {
+        "key": { "type": "string" },
+        "type": { "enum": ["image", "video"] },
+        "min": { "type": "integer" },
+        "geotag": { "type": "boolean" },
+        "required": { "type": "boolean" },
+        "required_if": { "type": "string" }
+      }
+    }
+  }
+}

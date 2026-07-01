@@ -6,10 +6,13 @@ import {
   Param,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -39,6 +42,18 @@ export class StorageController {
   @ApiOperation({ summary: 'Check if storage is configured' })
   getStatus() {
     return { enabled: this.storage.isEnabled() };
+  }
+
+  @Get('file/{*key}')
+  @ApiOperation({ summary: 'Stream a stored object (S3 or local fallback)' })
+  async serveFile(
+    @Param('key') key: string | string[],
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const path = Array.isArray(key) ? key.join('/') : key;
+    const { body, contentType } = await this.storage.getObject(path);
+    res.set({ 'Content-Type': contentType });
+    return new StreamableFile(body);
   }
 
   @Post('upload')

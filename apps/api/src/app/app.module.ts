@@ -21,6 +21,8 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { AppLoggerModule } from './logger/logger.module';
 import { LookupModule } from './lookup/lookup.module';
 import { MailModule } from './mail/mail.module';
+import { PlatformModule } from './platform/platform.module';
+import { SupplierTradeModule } from './modules-domain/supplier-trade.module';
 import { NotificationModule } from './notification/notification.module';
 import { OrgModule } from './org/org.module';
 import { PaymentModule } from './payment/payment.module';
@@ -65,6 +67,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     WebhooksModule.forRootAsync(),
     IdempotencyModule,
     ReferralsModule,
+    // SupplierTrade — multi-vertical domain platform (docs/PLANNING.md)
+    PlatformModule,
+    SupplierTradeModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

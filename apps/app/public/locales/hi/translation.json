@@ -1,11 +1,125 @@
 {
   "settings": {
-    "language": "Language",
-    "theme": "Theme"
+    "language": "भाषा",
+    "theme": "थीम"
   },
   "theme": {
-    "dark": "Dark",
-    "light": "Light",
-    "system": "System"
+    "dark": "गहरा",
+    "light": "हल्का",
+    "system": "सिस्टम"
+  },
+  "st": {
+    "common": {
+      "loading": "लोड हो रहा है…",
+      "back": "पीछे",
+      "continue": "आगे बढ़ें",
+      "cancel": "रद्द करें",
+      "save": "सेव करें",
+      "done": "हो गया",
+      "yes": "हाँ",
+      "optional": "ज़रूरी नहीं",
+      "required": "ज़रूरी"
+    },
+    "nav": {
+      "dashboard": "होम",
+      "suppliers": "सप्लायर",
+      "onboard": "सप्लायर जोड़ें",
+      "config": "सेटिंग",
+      "referrals": "रेफर करें और कमाएँ",
+      "settings": "मेरा खाता",
+      "logout": "लॉग आउट"
+    },
+    "status": {
+      "trusted": "भरोसेमंद",
+      "trustedHint": "जाँच पूरी — व्यापार के लिए सुरक्षित",
+      "checking": "जाँच हो रही है",
+      "checkingHint": "हम इस सप्लायर की जाँच कर रहे हैं",
+      "review": "जाँच ज़रूरी",
+      "reviewHint": "व्यापार से पहले कुछ देखना ज़रूरी है",
+      "notStarted": "अभी बाकी",
+      "notStartedHint": "जाँच अभी नहीं हुई"
+    },
+    "dashboard": {
+      "welcome": "नमस्ते, {{name}}",
+      "trustOverview": "आपके सप्लायर",
+      "verifiedSuppliers": "भरोसेमंद सप्लायर",
+      "ofTotal": "{{total}} में से {{count}} सप्लायर",
+      "suppliers": "सप्लायर",
+      "verified": "भरोसेमंद",
+      "inVerification": "जाँच हो रही है",
+      "needsReview": "जाँच ज़रूरी",
+      "onboard": "सप्लायर जोड़ें",
+      "recentActivity": "हाल में क्या हुआ",
+      "recentSuppliers": "नए सप्लायर",
+      "nothingYet": "अभी कुछ नहीं।",
+      "noSuppliers": "अभी कोई सप्लायर नहीं।",
+      "addFirst": "अपना पहला सप्लायर जोड़ें"
+    },
+    "suppliers": {
+      "title": "सप्लायर",
+      "subtitle": "सप्लायर जोड़ें और जाँचें कि वे भरोसेमंद हैं या नहीं।",
+      "search": "नाम या GST नंबर से खोजें…",
+      "newSupplier": "सप्लायर जोड़ें",
+      "empty": "अभी कोई सप्लायर नहीं।",
+      "colName": "सप्लायर",
+      "colType": "प्रकार",
+      "colStatus": "स्थिति",
+      "colCreated": "जोड़ा गया"
+    },
+    "onboarding": {
+      "eyebrow": "सप्लायर जोड़ें",
+      "title": "नया सप्लायर जोड़ें",
+      "help": "बस तीन आसान कदम। हम आपकी मदद करेंगे।",
+      "step1": "कौन?",
+      "step2": "जानकारी",
+      "step3": "जाँचें",
+      "chooseType": "यह किस तरह का सप्लायर है?",
+      "domain": "व्यापार क्षेत्र",
+      "docsNeeded": "{{count}} दस्तावेज़ चाहिए",
+      "docsNeeded_other": "{{count}} दस्तावेज़ चाहिए",
+      "legalName": "सप्लायर का पूरा नाम",
+      "legalNameHint": "जैसा सरकारी कागज़ों पर लिखा है",
+      "gstin": "GST नंबर",
+      "gstinHint": "15 अक्षर। न हो तो खाली छोड़ें।",
+      "detailsTitle": "थोड़ी और जानकारी",
+      "reviewTitle": "कृपया जानकारी जाँच लें",
+      "consent": "सप्लायर यह जानकारी साझा करने और जाँच के लिए सहमत है।",
+      "create": "सप्लायर जोड़ें",
+      "creating": "जोड़ा जा रहा है…",
+      "successTitle": "सप्लायर जुड़ गया!",
+      "successBody": "अब भरोसेमंद बैज पाने के लिए इनकी जाँच कराएँ।",
+      "openSupplier": "सप्लायर खोलें",
+      "addAnother": "एक और जोड़ें"
+    },
+    "documents": {
+      "title": "दस्तावेज़ और फ़ोटो",
+      "subtitle": "{{type}} के लिए ज़रूरी कागज़ और फ़ोटो जोड़ें।",
+      "none": "इस सप्लायर के लिए कोई दस्तावेज़ ज़रूरी नहीं।",
+      "documents": "कागज़",
+      "media": "फ़ोटो और वीडियो",
+      "upload": "अपलोड करें",
+      "takePhoto": "फ़ोटो लें",
+      "choosePhoto": "फ़ोटो जोड़ें",
+      "uploading": "अपलोड हो रहा है…",
+      "uploaded": "{{count}} जोड़े गए",
+      "remove": "हटाएँ",
+      "view": "देखें",
+      "opening": "खुल रहा है…",
+      "photo": "फ़ोटो",
+      "video": "वीडियो",
+      "geotagged": "स्थान सेव हुआ"
+    },
+    "supplier": {
+      "back": "सप्लायर सूची पर वापस",
+      "submit": "जाँच के लिए भेजें",
+      "runVerification": "अभी जाँचें",
+      "running": "जाँच हो रही है…",
+      "submitFirst": "पहले जाँच के लिए भेजें।",
+      "verification": "भरोसे की जाँच",
+      "noVerification": "अभी जाँच नहीं हुई। हर जाँच सबूत दिखाती है — सिर्फ़ टिक नहीं।",
+      "showEvidence": "सबूत दिखाएँ",
+      "hideEvidence": "सबूत छिपाएँ",
+      "reportsTotal": "{{count}} जाँच पूरी"
+    }
   }
 }

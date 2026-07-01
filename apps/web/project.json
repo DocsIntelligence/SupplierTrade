@@ -6,7 +6,7 @@
   "targets": {
     "build": {
       "options": {
-        "command": "next build --webpack"
+        "command": "next build"
       }
     },
     "serve": {

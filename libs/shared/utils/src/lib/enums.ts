@@ -81,3 +81,66 @@ export const Currency = {
   GBP: 'GBP',
 } as const;
 export type Currency = (typeof Currency)[keyof typeof Currency];
+
+// ═══════════════════════════════════════════════════════════════════
+// SUPPLIERTRADE — multi-vertical domain platform
+// Mirror of the String fields in the SupplierTrade Prisma models.
+// See docs/PLANNING.md §7 and docs/DOMAIN-ARCHITECTURE.md.
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Domain lifecycle ───────────────────────────────────────────
+export const DomainStatus = {
+  DRAFT: 'draft',
+  ACTIVE: 'active',
+  ARCHIVED: 'archived',
+} as const;
+export type DomainStatus = (typeof DomainStatus)[keyof typeof DomainStatus];
+
+// ─── Workflow subject types ─────────────────────────────────────
+export const WorkflowSubject = {
+  SUPPLIER: 'supplier',
+  LISTING: 'listing',
+} as const;
+export type WorkflowSubject =
+  (typeof WorkflowSubject)[keyof typeof WorkflowSubject];
+
+// ─── Per-signal verification status (graded — never binary) ─────
+export const SignalStatus = {
+  PASS: 'pass',
+  FLAG: 'flag',
+  NA: 'na',
+} as const;
+export type SignalStatus = (typeof SignalStatus)[keyof typeof SignalStatus];
+
+// ─── Aggregate verification report status (graded) ──────────────
+export const VerificationStatus = {
+  VERIFIED: 'verified',
+  FLAGGED: 'flagged',
+  INSUFFICIENT: 'insufficient',
+} as const;
+export type VerificationStatus =
+  (typeof VerificationStatus)[keyof typeof VerificationStatus];
+
+// ─── QC job status ──────────────────────────────────────────────
+export const QcJobStatus = {
+  PENDING: 'pending',
+  SCORED: 'scored',
+  FAILED: 'failed',
+} as const;
+export type QcJobStatus = (typeof QcJobStatus)[keyof typeof QcJobStatus];
+
+// ─── Supplier document status ───────────────────────────────────
+export const SupplierDocumentStatus = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+} as const;
+export type SupplierDocumentStatus =
+  (typeof SupplierDocumentStatus)[keyof typeof SupplierDocumentStatus];
+
+// ─── Media asset type ───────────────────────────────────────────
+export const MediaType = {
+  IMAGE: 'image',
+  VIDEO: 'video',
+} as const;
+export type MediaType = (typeof MediaType)[keyof typeof MediaType];

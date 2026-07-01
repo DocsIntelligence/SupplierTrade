@@ -7,10 +7,17 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
-import { extname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, extname, isAbsolute, join, resolve } from 'node:path';
 
 export interface UploadResult {
   key: string;
@@ -19,6 +26,19 @@ export interface UploadResult {
   contentType: string;
 }
 
+/** Minimal extension → MIME map for the local-disk fallback. */
+const MIME_BY_EXT: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+};
+
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
@@ -26,6 +46,8 @@ export class StorageService {
   private readonly bucket: string;
   private readonly publicUrl: string;
   private readonly enabled: boolean;
+  /** Local-disk fallback root, used when S3 is not configured (dev). */
+  private readonly localDir: string;
 
   constructor(private readonly config: ConfigService) {
     const endpoint = this.config.get<string>('STORAGE_ENDPOINT');
@@ -34,6 +56,12 @@ export class StorageService {
     this.bucket = this.config.get<string>('STORAGE_BUCKET') ?? 'uploads';
     this.publicUrl =
       this.config.get<string>('STORAGE_PUBLIC_URL') ?? endpoint ?? '';
+
+    const localDirCfg =
+      this.config.get<string>('STORAGE_LOCAL_DIR') ?? '.data/uploads';
+    this.localDir = isAbsolute(localDirCfg)
+      ? localDirCfg
+      : resolve(process.cwd(), localDirCfg);
 
     this.enabled = Boolean(endpoint && accessKey && secretKey);
 
@@ -47,13 +75,50 @@ export class StorageService {
       this.logger.log(`Storage initialized (endpoint: ${endpoint})`);
     } else {
       this.logger.warn(
-        'Storage not configured — STORAGE_ENDPOINT/ACCESS_KEY/SECRET_KEY missing',
+        `Storage: S3 not configured — using local-disk fallback at ${this.localDir}`,
       );
     }
   }
 
+  /** True when S3 is configured. Local fallback is always available. */
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  /** API path the frontend fetches to stream a stored object. */
+  fileApiPath(key: string): string {
+    return `/storage/file/${key}`;
+  }
+
+  private localPath(key: string): string {
+    // Prevent path traversal outside the local root.
+    const full = resolve(this.localDir, key);
+    if (!full.startsWith(resolve(this.localDir))) {
+      throw new BadRequestException('Invalid storage key');
+    }
+    return full;
+  }
+
+  private mimeForKey(key: string): string {
+    return MIME_BY_EXT[extname(key).toLowerCase()] ?? 'application/octet-stream';
+  }
+
+  /** Read an object's bytes + content type (works for S3 or local). */
+  async getObject(key: string): Promise<{ body: Buffer; contentType: string }> {
+    if (this.client) {
+      const res = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      const bytes = await res.Body?.transformToByteArray();
+      if (!bytes) throw new NotFoundException('File not found');
+      return {
+        body: Buffer.from(bytes),
+        contentType: res.ContentType ?? this.mimeForKey(key),
+      };
+    }
+    const path = this.localPath(key);
+    if (!existsSync(path)) throw new NotFoundException('File not found');
+    return { body: await readFile(path), contentType: this.mimeForKey(key) };
   }
 
   /** Upload a file buffer */
@@ -66,12 +131,23 @@ export class StorageService {
       userId?: string;
     },
   ): Promise<UploadResult> {
-    if (!this.client) throw new BadRequestException('Storage not configured');
-
     const ext = extname(options.filename);
     const key = options.folder
       ? `${options.folder}/${randomUUID()}${ext}`
       : `${options.userId ?? 'public'}/${randomUUID()}${ext}`;
+
+    if (!this.client) {
+      // Local-disk fallback (dev).
+      const path = this.localPath(key);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, file);
+      return {
+        key,
+        url: this.fileApiPath(key),
+        size: file.length,
+        contentType: options.contentType,
+      };
+    }
 
     await this.client.send(
       new PutObjectCommand({
@@ -127,8 +203,11 @@ export class StorageService {
 
   /** Delete a file */
   async delete(key: string): Promise<void> {
-    if (!this.client) throw new BadRequestException('Storage not configured');
-
+    if (!this.client) {
+      await rm(this.localPath(key), { force: true });
+      this.logger.debug(`Deleted (local): ${key}`);
+      return;
+    }
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     );

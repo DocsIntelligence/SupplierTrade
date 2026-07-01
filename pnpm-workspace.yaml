@@ -1,3 +1,10 @@
+# Single-root install (Nx orchestrates projects, not pnpm workspaces). The
+# lockfile has only the "." importer. Declaring "." keeps older/newer pnpm
+# happy — a pnpm-workspace.yaml with no `packages` field errors on some pnpm
+# versions ("packages field missing or empty").
+packages:
+  - '.'
+
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@prisma/client'

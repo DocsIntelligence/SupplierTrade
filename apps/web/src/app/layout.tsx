@@ -5,9 +5,17 @@ import { Providers } from '../lib/providers';
 import './global.css';
 
 export const metadata = {
-  title: '@org/web',
-  description: 'Next.js boilerplate',
+  title: 'SupplierTrade',
+  description: 'Supplier trust & quality layer for B2B supply chains',
 };
+
+/**
+ * Render dynamically. The whole app sits behind cookie auth + a client Redux
+ * provider, so there's nothing to statically prerender — and forcing dynamic
+ * avoids evaluating the client `Providers` during static generation of Next's
+ * built-in pages (which crashed the production build with a null React).
+ */
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
