@@ -106,6 +106,29 @@ value's `metadata.i18n` (no code change).
 
 ---
 
+## 4b. Audience: low-literacy, rural Indian users (plain & Hindi-first)
+
+The supplier-facing flows (onboarding, documents, supplier detail) target users
+with low literacy and limited English. Follow these:
+
+- **Hindi resolves automatically** — i18n `supportedLngs` + `nonExplicitSupportedLngs`
+  map `hi-IN` → `hi`; a big **EN | हिंदी** pill toggle sits at the top of onboarding
+  so anyone can switch instantly. All new supplier-flow strings live under the
+  `st.*` namespace in `public/locales/{en,hi}/translation.json`.
+- **Plain words, not jargon.** "Trust check" not "Verification report";
+  "Send for checking" not "Submit"; "Needs a look" not "flagged/insufficient".
+- **Traffic-light status.** Never show raw statuses. Use `<StatusBadge status={…}>`
+  (`features/suppliertrade/StatusBadge.tsx`, backed by `friendlyStatus()` in
+  `status.ts`) — a coloured dot + one plain word (Trusted / Checking / Needs a look
+  / Not started), with an optional one-line hint. green=trusted, blue=checking,
+  red=needs-a-look, grey=not-started.
+- **Big tap targets + icons.** Use `size="lg"` buttons and a leading icon on primary
+  actions; supplier-type choices are large icon cards, not a dropdown.
+- **Camera-first capture.** Image uploaders use `<input capture="environment">` so
+  mobile opens the camera directly; label it "Take photo" with a camera icon.
+- **Guided steps.** Multi-field forms are a numbered wizard (Who? → Details → Check)
+  with a review step before submit.
+
 ## 5. Anti-patterns (reject in review)
 
 - ❌ Native `<select>` / `<input>` / `confirm()` where an `@org/ui` component exists.

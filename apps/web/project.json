@@ -14,12 +14,12 @@
     },
     "dev": {
       "options": {
-        "port": 6110
+        "port": 7110
       }
     },
     "start": {
       "options": {
-        "port": 6110
+        "port": 7110
       }
     }
   }

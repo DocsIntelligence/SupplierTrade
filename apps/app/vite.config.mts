@@ -8,14 +8,14 @@ export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/app',
   server: {
-    port: 6100,
+    port: 7100,
     host: 'localhost',
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd())],
     },
   },
   preview: {
-    port: 6100,
+    port: 7100,
     host: 'localhost',
   },
   plugins: [react(), tailwindcss(), nxViteTsPaths()],

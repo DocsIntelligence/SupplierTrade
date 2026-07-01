@@ -29,7 +29,7 @@ export class PasskeyService {
   ) {
     const publicUrl = this.config.get<string>(
       'PUBLIC_URL',
-      'http://localhost:6130',
+      'http://localhost:7130',
     );
     const url = new URL(publicUrl);
     this.rpId = url.hostname;
@@ -151,7 +151,8 @@ export class PasskeyService {
         });
         allowCredentials = passkeys.map((pk) => ({
           id: pk.credentialId,
-          transports: pk.transports as unknown as AuthenticatorTransportFuture[],
+          transports:
+            pk.transports as unknown as AuthenticatorTransportFuture[],
         }));
       }
       challengeKey = `auth:${email}`;
@@ -193,7 +194,8 @@ export class PasskeyService {
         id: passkey.credentialId,
         publicKey: new Uint8Array(passkey.publicKey),
         counter: Number(passkey.counter),
-        transports: passkey.transports as unknown as AuthenticatorTransportFuture[],
+        transports:
+          passkey.transports as unknown as AuthenticatorTransportFuture[],
       },
     });
 

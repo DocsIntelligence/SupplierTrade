@@ -1,4 +1,4 @@
-import type { FormFieldMeta } from '@org/dto';
+import type { FormFieldMeta, SupplierDocumentView } from '@org/dto';
 import { APP_ENV } from '../../../config';
 
 const API = APP_ENV.apiUrl;
@@ -174,15 +174,8 @@ export interface SupplierRequirements {
   media_capture: MediaRequirement[];
 }
 
-export interface SupplierDocument {
-  id: string;
-  docKey: string;
-  fileRef: string;
-  fileUrl: string;
-  mime: string;
-  status: string;
-  uploadedAt: string;
-}
+/** Canonical document shape lives in @org/dto; alias kept for existing imports. */
+export type SupplierDocument = SupplierDocumentView;
 
 export interface MediaAsset {
   id: string;
@@ -193,6 +186,85 @@ export interface MediaAsset {
   geoLat?: number | null;
   geoLng?: number | null;
   capturedAt: string;
+}
+
+// ─── RFQ (Phase 2A: verified matching + paid-QC validation) ─────
+
+export interface RfqLine {
+  id: string;
+  commodityKey: string;
+  quantity: number;
+  unit: string;
+  targetGrade?: string | null;
+}
+
+export interface RfqMatchReason {
+  factor: string;
+  points: number;
+  detail: string;
+}
+
+export interface RfqResponse {
+  id: string;
+  supplierId: string;
+  listingId?: string | null;
+  status: string; // suggested | shortlisted | quoted | rejected | awarded
+  quotedPricePaise?: number | null;
+  availableQuantity?: number | null;
+  unit?: string | null;
+  notes?: string | null;
+  matchScore?: number | null;
+  matchReasonsJson?: RfqMatchReason[] | null;
+  createdAt: string;
+}
+
+export interface BuyerValidationSignal {
+  id: string;
+  signal: string;
+  amountPaise?: number | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface RfqSummary {
+  id: string;
+  domainKey: string;
+  status: string;
+  title: string;
+  deliveryState?: string | null;
+  targetDate?: string | null;
+  createdAt: string;
+  _count?: { lines: number; responses: number };
+}
+
+export interface Rfq extends RfqSummary {
+  deliveryDistrict?: string | null;
+  budgetMinPaise?: number | null;
+  budgetMaxPaise?: number | null;
+  paymentTerms?: string | null;
+  notes?: string | null;
+  lines: RfqLine[];
+  responses: RfqResponse[];
+  validationSignals: BuyerValidationSignal[];
+}
+
+export interface ValidationSummary {
+  rfqsOpened: number;
+  matches: number;
+  qcRequested: number;
+  paidIntentCount: number;
+  amountPaise: number;
+  byType: Record<string, number>;
+}
+
+export interface RfqListParams {
+  domainKey: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  status?: string;
 }
 
 /** Server-side list response (matches @org/dto paginatedResponseSchema). */
@@ -270,12 +342,29 @@ export const st = {
     get<SupplierRequirements>(`/suppliers/${id}/requirements`),
   documents: (id: string) => get<SupplierDocument[]>(`/suppliers/${id}/documents`),
   media: (id: string) => get<MediaAsset[]>(`/suppliers/${id}/media`),
-  uploadDocument: (id: string, docKey: string, file: File) => {
+  uploadDocument: (
+    id: string,
+    docKey: string,
+    file: File,
+    meta?: { label?: string; note?: string },
+  ) => {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('docKey', docKey);
+    if (meta?.label) fd.append('label', meta.label);
+    if (meta?.note) fd.append('note', meta.note);
     return upload<SupplierDocument>(`/suppliers/${id}/documents`, fd);
   },
+  reviewDocument: (
+    id: string,
+    docId: string,
+    body: { decision: 'accepted' | 'rejected'; note?: string },
+  ) =>
+    send<SupplierDocument>(
+      `/suppliers/${id}/documents/${docId}/review`,
+      'PATCH',
+      body,
+    ),
   uploadMedia: (
     id: string,
     mediaKey: string,
@@ -293,6 +382,55 @@ export const st = {
   },
   deleteDocument: (id: string, docId: string) =>
     send<{ deleted: boolean }>(`/suppliers/${id}/documents/${docId}`, 'DELETE'),
+
+  // RFQ (buyer console)
+  rfqs: (params: RfqListParams) =>
+    get<Paginated<RfqSummary>>(`/rfqs${qs({ ...params })}`),
+  rfq: (id: string) => get<Rfq>(`/rfqs/${id}`),
+  createRfq: (body: {
+    domainKey: string;
+    title: string;
+    deliveryState?: string;
+    targetDate?: string;
+    notes?: string;
+    lines: {
+      commodityKey: string;
+      quantity: number;
+      unit: string;
+      targetGrade?: string;
+    }[];
+  }) => send<Rfq>('/rfqs', 'POST', body),
+  openRfq: (id: string) => send<Rfq>(`/rfqs/${id}/open`, 'POST'),
+  generateMatches: (id: string) =>
+    send<RfqResponse[]>(`/rfqs/${id}/matches/generate`, 'POST'),
+  addRfqResponse: (
+    id: string,
+    body: {
+      supplierId: string;
+      listingId?: string;
+      status: string;
+      quotedPricePaise?: number;
+      availableQuantity?: number;
+      unit?: string;
+      notes?: string;
+    },
+  ) => send<RfqResponse>(`/rfqs/${id}/responses`, 'POST', body),
+  updateRfqResponse: (id: string, rid: string, body: { status: string }) =>
+    send<RfqResponse>(`/rfqs/${id}/responses/${rid}`, 'PATCH', body),
+  requestRfqQc: (id: string, listingId: string) =>
+    send<QcJob>(`/rfqs/${id}/qc-requests`, 'POST', { listingId }),
+  recordRfqValidation: (
+    id: string,
+    body: { signal: string; amountPaise?: number; notes?: string },
+  ) => send<BuyerValidationSignal>(`/rfqs/${id}/validation`, 'POST', body),
+  closeRfq: (
+    id: string,
+    body: { status: string; awardedResponseId?: string; notes?: string },
+  ) => send<Rfq>(`/rfqs/${id}/close`, 'POST', body),
+  validationSummary: (domainKey: string) =>
+    get<ValidationSummary>(
+      `/rfqs/validation-summary?domainKey=${encodeURIComponent(domainKey)}`,
+    ),
 };
 
 /** Multipart upload (no JSON content-type — the browser sets the boundary). */

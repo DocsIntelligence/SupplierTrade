@@ -2,6 +2,13 @@
 
 Append-only record of phases that land. Newest at the top.
 
+## 2026-07-01 — India market analysis + Phase 2A plan
+
+- Added `docs/17-suppliertrade-market-next-phase-PLAN.md` with India agri-output market read, competitor map, pricing hypothesis, ICP, and a buildable Phase-2A scope.
+- Updated `PLANNING.md` current focus from Phase 1 to **Phase 2A: RFQ + verified matching + paid QC validation**.
+- Converted the Phase-0 pricing open question into a testable price card: `verification_fee = ₹1,500`, `qc_fee = ₹1,200`, field QC ₹2,500-₹5,000.
+- Added Phase-2A tasks for RFQ models, DTOs, API, deterministic matching, buyer console, read-only domain-config viewer, validation dashboard, and E2E.
+
 ## 2026-07-01 — Domain config CI validation
 
 - Added `pnpm domain:validate` (`tools/scripts/validate-domain-configs.ts`) to load every config under `config/domains`, validate against `domain.meta.schema.json`, and assert every referenced verification adapter, QC scorer, workflow guard, and action key is registered.

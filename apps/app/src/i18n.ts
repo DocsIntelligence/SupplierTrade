@@ -10,6 +10,12 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: DEFAULT_LOCALE,
+    // Resolve region variants to the base language so an `hi-IN` device gets
+    // Hindi automatically (key for the rural Indian audience); a big in-app
+    // EN | हिंदी toggle lets anyone switch at any time.
+    supportedLngs: ['en', 'es', 'fr', 'de', 'hi'],
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
     debug: false,
     interpolation: { escapeValue: false },
     backend: {

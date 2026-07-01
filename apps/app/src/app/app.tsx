@@ -53,6 +53,9 @@ const Referrals = lazyNamed(() => import('./features/referrals/Referrals'), 'Ref
 const SuppliersList = lazyNamed(() => import('./features/suppliertrade/SuppliersList'), 'SuppliersList');
 const SupplierDetail = lazyNamed(() => import('./features/suppliertrade/SupplierDetail'), 'SupplierDetail');
 const Onboarding = lazyNamed(() => import('./features/onboarding/Onboarding'), 'Onboarding');
+const RfqList = lazyNamed(() => import('./features/rfq/RfqList'), 'RfqList');
+const RfqCreate = lazyNamed(() => import('./features/rfq/RfqCreate'), 'RfqCreate');
+const RfqDetail = lazyNamed(() => import('./features/rfq/RfqDetail'), 'RfqDetail');
 
 export function App() {
   const dispatch = useAppDispatch();
@@ -90,6 +93,9 @@ export function App() {
           <Route path="/suppliers" element={<SuppliersList />} />
           <Route path="/suppliers/new" element={<Navigate to="/onboarding" replace />} />
           <Route path="/suppliers/:id" element={<SupplierDetail />} />
+          <Route path="/rfqs" element={<RfqList />} />
+          <Route path="/rfqs/new" element={<RfqCreate />} />
+          <Route path="/rfqs/:id" element={<RfqDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/referrals" element={<Referrals />} />

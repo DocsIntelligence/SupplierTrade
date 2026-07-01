@@ -3,10 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { CUSTOM_DOC_KEY, type ReviewDocumentDto } from '@org/dto';
 import { DatabaseService } from '../../database/database.service';
 import { StorageService } from '../../storage/storage.service';
+import { AuditService } from '../../audit/audit.service';
 import { DomainsService } from '../../platform/domains/domains.service';
 import { findSupplierType } from '../../platform/domains/domain.types';
+
+/** Fallback allowlist for custom ("other") documents when config gives none. */
+const CUSTOM_DOC_ACCEPTS = ['pdf', 'image'];
+
+function humanize(key: string): string {
+  return key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+}
 
 /**
  * Supplier documents & media (DOMAIN-ARCHITECTURE.md §2b/§6). What a supplier
@@ -22,6 +31,7 @@ export class SupplierDocumentsService {
     private readonly db: DatabaseService,
     private readonly storage: StorageService,
     private readonly domains: DomainsService,
+    private readonly audit: AuditService,
   ) {}
 
   private async supplierOrThrow(id: string) {
@@ -42,22 +52,40 @@ export class SupplierDocumentsService {
     };
   }
 
+  /**
+   * Store a document. `docKey` may be a config-defined required document OR the
+   * special `CUSTOM_DOC_KEY` ("other") for a user-added document — custom docs
+   * require a `label` and accept the general pdf/image allowlist. Captures
+   * original filename, size, uploader, and an optional note for later review.
+   */
   async addDocument(
     supplierId: string,
     docKey: string,
     file: Express.Multer.File,
+    opts: { label?: string; note?: string; uploadedById?: string } = {},
   ) {
     if (!docKey) throw new BadRequestException('docKey is required');
+    if (!file) throw new BadRequestException('A file is required');
     const supplier = await this.supplierOrThrow(supplierId);
     const domain = await this.domains.getConfig(supplier.domainKey);
     const type = findSupplierType(domain, supplier.supplierType);
-    const spec = type?.required_documents?.find((d) => d.key === docKey);
-    if (!spec) {
-      throw new BadRequestException(
-        `Unknown document "${docKey}" for supplier type "${supplier.supplierType}"`,
-      );
+
+    let label = opts.label?.trim();
+    if (docKey === CUSTOM_DOC_KEY) {
+      if (!label) {
+        throw new BadRequestException('A document name is required');
+      }
+      this.assertAccepted(CUSTOM_DOC_ACCEPTS, file.mimetype);
+    } else {
+      const spec = type?.required_documents?.find((d) => d.key === docKey);
+      if (!spec) {
+        throw new BadRequestException(
+          `Unknown document "${docKey}" for supplier type "${supplier.supplierType}"`,
+        );
+      }
+      this.assertAccepted(spec.accepts, file.mimetype);
+      label = label || humanize(docKey);
     }
-    this.assertAccepted(spec.accepts, file.mimetype);
 
     const { key } = await this.storage.upload(file.buffer, {
       filename: file.originalname,
@@ -65,15 +93,67 @@ export class SupplierDocumentsService {
       folder: `suppliers/${supplierId}/documents`,
     });
 
-    return this.db.supplierDocument.create({
+    const doc = await this.db.supplierDocument.create({
       data: {
         supplierId,
         domainKey: supplier.domainKey,
         docKey,
+        label,
+        note: opts.note?.trim() || null,
         fileRef: key,
         mime: file.mimetype,
+        originalName: file.originalname,
+        sizeBytes: file.size,
+        uploadedById: opts.uploadedById ?? null,
+        status: 'pending',
       },
     });
+
+    await this.audit.record({
+      actorId: opts.uploadedById ?? null,
+      action: 'supplier_document.upload',
+      targetType: 'supplier',
+      targetId: supplierId,
+      after: { docKey, label, id: doc.id },
+    });
+    return doc;
+  }
+
+  /**
+   * Admin review of a document: accept or reject with a note (required on
+   * reject). Records the reviewer, decision time, and an audit entry so both
+   * the user and other admins can see the history.
+   */
+  async reviewDocument(
+    supplierId: string,
+    docId: string,
+    dto: ReviewDocumentDto,
+    reviewerId?: string,
+  ) {
+    const doc = await this.db.supplierDocument.findUnique({
+      where: { id: docId },
+    });
+    if (!doc || doc.supplierId !== supplierId) {
+      throw new NotFoundException('Document not found');
+    }
+    const updated = await this.db.supplierDocument.update({
+      where: { id: docId },
+      data: {
+        status: dto.decision,
+        reviewNote: dto.note?.trim() || null,
+        reviewedById: reviewerId ?? null,
+        decidedAt: new Date(),
+      },
+    });
+    await this.audit.record({
+      actorId: reviewerId ?? null,
+      action: `supplier_document.${dto.decision}`,
+      targetType: 'supplier',
+      targetId: supplierId,
+      before: { status: doc.status },
+      after: { status: dto.decision, note: dto.note ?? null, docId },
+    });
+    return updated;
   }
 
   async addMedia(

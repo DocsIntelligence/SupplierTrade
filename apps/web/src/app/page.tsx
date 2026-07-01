@@ -8,7 +8,7 @@ export const metadata = {
     'A B2B trust and quality layer for supply chains. Graded, evidence-backed supplier verification and config-driven quality control — starting with agriculture.',
 };
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:6100';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7100';
 
 export default async function HomePage() {
   const cookieStore = await cookies();

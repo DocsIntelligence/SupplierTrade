@@ -29,7 +29,7 @@ first and only domain shipped as config-as-code. See `DOMAIN-ARCHITECTURE.md`.
    licensed PSP/escrow partner. No adapter, service, or workflow action moves or custodies money directly.
    The platform records state; the partner moves money.
 2. **We never make lending or credit decisions.** No adapter outputs a credit score, loan approval, or
-   underwriting verdict. We surface verification *evidence*; financing partners decide independently.
+   underwriting verdict. We surface verification _evidence_; financing partners decide independently.
 3. **Verification is graded, never binary.** No service or adapter returns "verified/safe" as a boolean.
    Every `VerificationReport` is a graded status (`pass | flag | na` per signal) with stored evidence and a
    human-readable summary. The UI must never collapse this into a green "✓ Safe" badge without the grade.
@@ -46,15 +46,15 @@ first and only domain shipped as config-as-code. See `DOMAIN-ARCHITECTURE.md`.
 
 ## 3. Phase plan
 
-| Phase | Goal | Ships |
-|---|---|---|
-| **0 — Pricing/validation** | Confirm a produce buyer pays for verification/QC. | Manual concierge; no platform code. Output: `verification_fee`, `qc_fee` numbers. |
+| Phase                                      | Goal                                                            | Ships                                                                                                                                                                                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0 — Pricing/validation**                 | Confirm a produce buyer pays for verification/QC.               | Manual concierge; no platform code. Output: `verification_fee`, `qc_fee` numbers.                                                                                                                                                                        |
 | **1 — Platform core + agriculture config** | The domain abstraction + agriculture shipped as config-as-code. | `platform/{domains,workflow,schema,registries}`, Prisma domain models, agriculture seed config, `gst` + `litigation` verification adapters (graded), `grain_grade` QC scorer, suppliers/listings/verification-engine/qc modules. **No admin config UI.** |
-| **2 — RFQ + matching** | Buyers post requirements; verified suppliers matched. | `rfq` module, WhatsApp RFQ intake (feature-flagged), supplier search (domain-filtered). Read-only domain-config admin viewer (Layer 2). |
-| **3 — QC ops + escrow** | Field QC workflow + escrow via PSP partner. | QC job lifecycle, inspection reports, escrow actions wired to PSP (feature-flagged, GUARDRAIL #1). |
-| **4 — Sourcing rails** | ONDC-agri / eNAM sourcing (if in scope). | Sourcing adapters, additional domains as config. CRUD config studio only if churn is real (Layer 3). |
+| **2 — RFQ + matching**                     | Buyers post requirements; verified suppliers matched.           | `rfq` module, WhatsApp RFQ intake (feature-flagged), supplier search (domain-filtered). Read-only domain-config admin viewer (Layer 2).                                                                                                                  |
+| **3 — QC ops + escrow**                    | Field QC workflow + escrow via PSP partner.                     | QC job lifecycle, inspection reports, escrow actions wired to PSP (feature-flagged, GUARDRAIL #1).                                                                                                                                                       |
+| **4 — Sourcing rails**                     | ONDC-agri / eNAM sourcing (if in scope).                        | Sourcing adapters, additional domains as config. CRUD config studio only if churn is real (Layer 3).                                                                                                                                                     |
 
-**Current focus: Phase 1.** Phase 0 is a business activity, not code.
+**Current focus: Phase 2A.** Build RFQ + verified matching + paid QC validation. See `docs/17-suppliertrade-market-next-phase-PLAN.md`.
 
 ---
 
@@ -79,16 +79,16 @@ A new vertical that recombines existing capabilities = **config only, zero code*
 
 The starter already ships generic modules. SupplierTrade **reuses, does not rebuild** them:
 
-| Need | Reuse existing | Notes |
-|---|---|---|
-| Tenancy / actor accounts | `org` + `Membership`, `auth` | A supplier org maps to `Organization`. |
-| Workflow audit trail | `audit` / `AuditLog` | Every workflow transition writes an `AuditLog` entry (DOMAIN-ARCHITECTURE §4). `WorkflowEvent` is the typed, per-instance projection. |
-| Documents & media | `storage` (S3/MinIO) | `SupplierDocument.file_ref` / `MediaAsset.file_ref` point at storage keys. |
-| Config plumbing / feature flags | `settings`, `lookup` | Domain `feature_flags` resolved at runtime; static master data via `lookup`. |
-| Payments / escrow rails | `payment` (Razorpay) | Escrow actions call the PSP via this module — platform never custodies funds (GUARDRAIL #1). |
-| Notifications | `notification` | RFQ/verification/QC status updates. |
-| Async jobs | `cron`, BullMQ (`redis-queue`) | Verification runs, QC reminders. |
-| Idempotency / API keys / webhooks / TOTP | as-is | Partner integrations, secure mutations. |
+| Need                                     | Reuse existing                 | Notes                                                                                                                                 |
+| ---------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Tenancy / actor accounts                 | `org` + `Membership`, `auth`   | A supplier org maps to `Organization`.                                                                                                |
+| Workflow audit trail                     | `audit` / `AuditLog`           | Every workflow transition writes an `AuditLog` entry (DOMAIN-ARCHITECTURE §4). `WorkflowEvent` is the typed, per-instance projection. |
+| Documents & media                        | `storage` (S3/MinIO)           | `SupplierDocument.file_ref` / `MediaAsset.file_ref` point at storage keys.                                                            |
+| Config plumbing / feature flags          | `settings`, `lookup`           | Domain `feature_flags` resolved at runtime; static master data via `lookup`.                                                          |
+| Payments / escrow rails                  | `payment` (Razorpay)           | Escrow actions call the PSP via this module — platform never custodies funds (GUARDRAIL #1).                                          |
+| Notifications                            | `notification`                 | RFQ/verification/QC status updates.                                                                                                   |
+| Async jobs                               | `cron`, BullMQ (`redis-queue`) | Verification runs, QC reminders.                                                                                                      |
+| Idempotency / API keys / webhooks / TOTP | as-is                          | Partner integrations, secure mutations.                                                                                               |
 
 **Net-new (Phase 1):** `platform/*`, `suppliers`, `listings`, a **new graded** verification engine, `qc`.
 
@@ -161,7 +161,10 @@ MediaAsset        (id, supplierId, domainKey, mediaKey, type, fileRef, geoLat?, 
 3. ONDC-agri / eNAM as a Phase-4 rail — in or out?
 4. Phase-0 pricing: what does a produce buyer pay per verification / per QC?
 
+   Current hypothesis to validate in Phase 2A: `verification_fee = ₹1,500` per supplier profile and
+   `qc_fee = ₹1,200` per grain-style lot; field QC is ₹2,500-₹5,000 depending on sampling partner.
+
 ---
 
-*See `DOMAIN-ARCHITECTURE.md` for the configuration design and `SUPPLIERTRADE-PLAN.md` for the concrete,
-boilerplate-aware build plan and gap analysis.*
+_See `DOMAIN-ARCHITECTURE.md` for the configuration design and `SUPPLIERTRADE-PLAN.md` for the concrete,
+boilerplate-aware build plan and gap analysis._

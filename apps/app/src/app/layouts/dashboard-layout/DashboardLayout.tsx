@@ -6,6 +6,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@org/store';
+import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher, UserAvatar } from '@org/ui';
 import { LogOut, Menu, PanelLeftClose, Plus, X } from 'lucide-react';
 import { NAV } from './nav';
@@ -98,6 +99,7 @@ function Sidebar({
   user: ReturnType<typeof selectUser>;
   onLogout: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       {/* Header */}
@@ -125,7 +127,7 @@ function Sidebar({
           className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Plus size={16} />
-          New supplier
+          {t('st.nav.onboard')}
         </NavLink>
       </div>
 
@@ -138,9 +140,9 @@ function Sidebar({
           if (!items.length) return null;
           return (
             <div key={gi} className="mb-4">
-              {group.label && (
+              {group.labelKey && (
                 <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
-                  {group.label}
+                  {t(group.labelKey)}
                 </p>
               )}
               <div className="flex flex-col gap-0.5">
@@ -161,7 +163,7 @@ function Sidebar({
                       }
                     >
                       <Icon size={17} strokeWidth={1.9} className="shrink-0" />
-                      {item.label}
+                      {t(item.labelKey)}
                     </NavLink>
                   );
                 })}

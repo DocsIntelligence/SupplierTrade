@@ -144,3 +144,36 @@ export const MediaType = {
   VIDEO: 'video',
 } as const;
 export type MediaType = (typeof MediaType)[keyof typeof MediaType];
+
+// ─── RFQ lifecycle ─────────────────────────────────────────────
+export const RfqStatus = {
+  DRAFT: 'draft',
+  OPEN: 'open',
+  MATCHED: 'matched',
+  SAMPLING: 'sampling',
+  AWARDED: 'awarded',
+  CLOSED: 'closed',
+  CANCELLED: 'cancelled',
+} as const;
+export type RfqStatus = (typeof RfqStatus)[keyof typeof RfqStatus];
+
+// ─── RFQ response status ───────────────────────────────────────
+export const RfqResponseStatus = {
+  SUGGESTED: 'suggested',
+  SHORTLISTED: 'shortlisted',
+  QUOTED: 'quoted',
+  REJECTED: 'rejected',
+  AWARDED: 'awarded',
+} as const;
+export type RfqResponseStatus =
+  (typeof RfqResponseStatus)[keyof typeof RfqResponseStatus];
+
+// ─── Buyer validation signals ──────────────────────────────────
+export const BuyerValidationSignalType = {
+  VERIFICATION_FEE_INTEREST: 'verification_fee_interest',
+  QC_FEE_INTEREST: 'qc_fee_interest',
+  PILOT_COMMITMENT: 'pilot_commitment',
+  REJECTED_PRICE: 'rejected_price',
+} as const;
+export type BuyerValidationSignalType =
+  (typeof BuyerValidationSignalType)[keyof typeof BuyerValidationSignalType];

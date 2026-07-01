@@ -26,12 +26,12 @@ flowchart TD
     user([Browser])
 
     subgraph frontends [Frontends]
-        web["web — Next.js<br/>:6110"]
-        app["app — React + Vite<br/>:6100"]
+        web["web — Next.js<br/>:7110"]
+        app["app — React + Vite<br/>:7100"]
     end
 
-    api["api — NestJS<br/>:6130/api"]
-    artboard["artboard — Vite<br/>:6120 · HTML render target"]
+    api["api — NestJS<br/>:7130/api"]
+    artboard["artboard — Vite<br/>:7120 · HTML render target"]
     db[("SQLite<br/>tools/prisma/dev.db")]
 
     subgraph external [External providers]

@@ -6,24 +6,24 @@ wired together with a shared DTO/UI/utility layer and Prisma (SQLite by default)
 
 ## Stack
 
-| Layer        | Tech                                                        |
-| ------------ | ----------------------------------------------------------- |
-| Monorepo     | [Nx](https://nx.dev) + [pnpm](https://pnpm.io) workspaces   |
-| API          | [NestJS](https://nestjs.com), Prisma, Passport (JWT + OAuth + passkeys) |
-| Database     | [Prisma](https://www.prisma.io) → **SQLite** (`tools/prisma/dev.db`) |
-| Dashboard    | React + [Vite](https://vite.dev), react-hook-form + Zod     |
-| Web          | [Next.js](https://nextjs.org)                               |
-| Artboard     | React + Vite (HTML → PDF/PNG/DOCX render target)            |
-| Shared libs  | `@org/dto`, `@org/ui`, `@org/utils`, `@org/hooks`, `@org/store`, `@org/api-client`, `@org/transliteration` |
+| Layer       | Tech                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------- |
+| Monorepo    | [Nx](https://nx.dev) + [pnpm](https://pnpm.io) workspaces                                                  |
+| API         | [NestJS](https://nestjs.com), Prisma, Passport (JWT + OAuth + passkeys)                                    |
+| Database    | [Prisma](https://www.prisma.io) → **SQLite** (`tools/prisma/dev.db`)                                       |
+| Dashboard   | React + [Vite](https://vite.dev), react-hook-form + Zod                                                    |
+| Web         | [Next.js](https://nextjs.org)                                                                              |
+| Artboard    | React + Vite (HTML → PDF/PNG/DOCX render target)                                                           |
+| Shared libs | `@org/dto`, `@org/ui`, `@org/utils`, `@org/hooks`, `@org/store`, `@org/api-client`, `@org/transliteration` |
 
 ## Apps & ports
 
-| App        | Project      | Dev URL                  | What it is                                  |
-| ---------- | ------------ | ------------------------ | ------------------------------------------- |
-| Dashboard  | `app`        | http://localhost:6100    | React + Vite authenticated dashboard         |
-| Web        | `web`        | http://localhost:6110    | Next.js public / marketing site              |
-| Artboard   | `artboard`   | http://localhost:6120    | Headless renderer used by the PDF worker     |
-| API        | `api`        | http://localhost:6130/api | NestJS REST API (Swagger at `/docs`)        |
+| App       | Project    | Dev URL                   | What it is                               |
+| --------- | ---------- | ------------------------- | ---------------------------------------- |
+| Dashboard | `app`      | http://localhost:7100     | React + Vite authenticated dashboard     |
+| Web       | `web`      | http://localhost:7110     | Next.js public / marketing site          |
+| Artboard  | `artboard` | http://localhost:7120     | Headless renderer used by the PDF worker |
+| API       | `api`      | http://localhost:7130/api | NestJS REST API (Swagger at `/docs`)     |
 
 ## Quick start
 
@@ -51,24 +51,24 @@ pnpm dev
 needed for PDF export):
 
 ```sh
-pnpm exec nx serve artboard   # http://localhost:6120
+pnpm exec nx serve artboard   # http://localhost:7120
 ```
 
 ## Common commands
 
-| Command                       | Description                                            |
-| ----------------------------- | ------------------------------------------------------ |
-| `pnpm dev`                    | Serve api + app + web                                   |
-| `pnpm dev:api` / `:app` / `:web` | Serve a single app                                  |
-| `pnpm build`                  | Production build of api + app + web                     |
-| `pnpm lint` / `pnpm lint:fix` | Lint all projects                                      |
-| `pnpm format:write`           | Prettier-format the repo                               |
-| `pnpm prisma:migrate:dev`     | Create/apply a migration against SQLite + seed         |
-| `pnpm prisma:studio`          | Open Prisma Studio                                     |
-| `pnpm prisma:seed`            | Re-run the seed (plans + lookups)                      |
-| `pnpm seed:lookups`           | Seed only the lookup/reference data                    |
-| `pnpm graph`                  | Visualise the Nx project graph                          |
-| `pnpm exec nx <target> <project>` | Run any Nx target for any project                  |
+| Command                           | Description                                    |
+| --------------------------------- | ---------------------------------------------- |
+| `pnpm dev`                        | Serve api + app + web                          |
+| `pnpm dev:api` / `:app` / `:web`  | Serve a single app                             |
+| `pnpm build`                      | Production build of api + app + web            |
+| `pnpm lint` / `pnpm lint:fix`     | Lint all projects                              |
+| `pnpm format:write`               | Prettier-format the repo                       |
+| `pnpm prisma:migrate:dev`         | Create/apply a migration against SQLite + seed |
+| `pnpm prisma:studio`              | Open Prisma Studio                             |
+| `pnpm prisma:seed`                | Re-run the seed (plans + lookups)              |
+| `pnpm seed:lookups`               | Seed only the lookup/reference data            |
+| `pnpm graph`                      | Visualise the Nx project graph                 |
+| `pnpm exec nx <target> <project>` | Run any Nx target for any project              |
 
 ## Database
 

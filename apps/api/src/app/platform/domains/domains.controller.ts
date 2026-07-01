@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { JsonSchemaService } from '../schema/json-schema.service';
+import { VerificationAdapterRegistry } from '../registries/verification-adapter.registry';
+import { QcScorerRegistry } from '../registries/qc-scorer.registry';
 import { DomainsService } from './domains.service';
 
 /**
@@ -24,6 +28,8 @@ export class DomainsController {
   constructor(
     private readonly domains: DomainsService,
     private readonly schema: JsonSchemaService,
+    private readonly verificationRegistry: VerificationAdapterRegistry,
+    private readonly qcRegistry: QcScorerRegistry,
   ) {}
 
   @Get()
@@ -78,5 +84,52 @@ export class DomainsController {
       );
     }
     return this.schema.formMetadata(schema);
+  }
+
+  /**
+   * READ-ONLY config inspector (DOMAIN-ARCHITECTURE.md §0 Layer 2). Admin-only.
+   * Surfaces the full active config — workflow, verification/QC profiles, and
+   * every plugin key it references — alongside the keys actually registered in
+   * code, so an admin can see what's wired. NOT config editing (that's Layer 3).
+   */
+  @Get(':key/inspect')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Read-only full config inspector (admin)' })
+  async inspect(@Param('key') key: string) {
+    const c = await this.domains.getConfig(key);
+    const referencedSignals = [
+      ...(c.verification_profile?.required_signals ?? []),
+      ...(c.supplier_types ?? []).flatMap((t) => t.verification_signals ?? []),
+    ].map((s) => s.key);
+
+    return {
+      key: c.key,
+      name: c.name,
+      version: c.version,
+      status: c.status,
+      supplier_types: (c.supplier_types ?? []).map((t) => t.key),
+      verification: {
+        required_signals: c.verification_profile?.required_signals ?? [],
+        thresholds: c.verification_profile?.thresholds ?? {},
+      },
+      qc_profile: c.qc_profile ?? null,
+      workflow: {
+        initial: c.workflow?.initial,
+        states: c.workflow?.states ?? [],
+        transitions: c.workflow?.transitions ?? [],
+      },
+      plugins: {
+        verification: {
+          referenced: [...new Set(referencedSignals)],
+          registered: this.verificationRegistry.keys(),
+        },
+        qc: {
+          referenced: c.qc_profile?.scorer ? [c.qc_profile.scorer] : [],
+          registered: this.qcRegistry.keys(),
+        },
+      },
+      feature_flags: c.feature_flags ?? {},
+    };
   }
 }

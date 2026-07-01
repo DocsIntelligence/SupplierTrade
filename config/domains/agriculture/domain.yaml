@@ -7,7 +7,7 @@ domain:
   key: agriculture
   name: Agriculture (Produce)
   status: active
-  version: 1
+  version: 2
   locale_defaults: { lang: hi, fallback: en }
 
   entity_schemas:
@@ -23,7 +23,9 @@ domain:
         - { key: pan_business, accepts: [pdf, image], required: true }
         - { key: cancelled_cheque, accepts: [image], required: true }
       media_capture:
-        - { key: produce_photos, type: image, min: 3, geotag: true, required: false }
+        - { key: produce_photos, type: image, min: 3, geotag: true, required: true }
+        - { key: warehouse_photos, type: image, min: 2, geotag: true, required: false }
+        - { key: produce_video, type: video, required: false }
       verification_signals:
         - { key: gst, required: true }
         - { key: litigation, required: true }
@@ -34,7 +36,8 @@ domain:
         - { key: gst_certificate, accepts: [pdf, image], required: true }
         - { key: pan_business, accepts: [pdf, image], required: true }
       media_capture:
-        - { key: storefront_photo, type: image, geotag: true, required: false }
+        - { key: storefront_photos, type: image, min: 2, geotag: true, required: true }
+        - { key: stock_photos, type: image, min: 2, geotag: false, required: false }
       verification_signals:
         - { key: gst, required: true }
         - { key: litigation, required: true }
@@ -44,6 +47,9 @@ domain:
       required_documents:
         - { key: gst_certificate, accepts: [pdf, image], required: true }
         - { key: pan_business, accepts: [pdf, image], required: true }
+      media_capture:
+        - { key: facility_photos, type: image, min: 3, geotag: true, required: true }
+        - { key: processing_video, type: video, required: false }
       verification_signals:
         - { key: gst, required: true }
         - { key: litigation, required: true }

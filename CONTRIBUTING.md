@@ -11,33 +11,33 @@ See the [README](README.md#quick-start) for the full quick-start. In short:
 pnpm install
 cp .env.example .env          # fill in ACCESS_TOKEN_SECRET + REFRESH_TOKEN_SECRET
 pnpm prisma:migrate:dev       # create SQLite db + run migrations + seed
-pnpm dev                      # api(6130) + app(6100) + web(6110)
+pnpm dev                      # api(7130) + app(7100) + web(7110)
 ```
 
 ## Repo map
 
-| Path                     | What lives here                                                |
-| ------------------------ | -------------------------------------------------------------- |
-| `apps/api`               | NestJS API — auth, payments, mail, AI usage, lookups           |
-| `apps/app`               | React + Vite dashboard (authenticated)                         |
-| `apps/web`               | Next.js public site                                            |
-| `apps/artboard`          | Headless render target for PDF/PNG/DOCX export                 |
-| `libs/shared/dto`        | Zod schemas + `createZodDto` DTOs — **the shared contract**    |
-| `libs/shared/ui`         | `@org/ui` component library (Button, Input, Select, …)         |
-| `libs/shared/utils`      | `@org/utils` — enums, errors, config, i18n, helpers            |
-| `libs/shared/hooks`      | `@org/hooks` React hooks                                       |
-| `libs/shared/store`      | `@org/store` client state                                      |
-| `libs/shared/api-client` | `@org/api-client` typed API client                             |
-| `tools/prisma`           | `schema.prisma`, migrations, seed                              |
+| Path                     | What lives here                                             |
+| ------------------------ | ----------------------------------------------------------- |
+| `apps/api`               | NestJS API — auth, payments, mail, AI usage, lookups        |
+| `apps/app`               | React + Vite dashboard (authenticated)                      |
+| `apps/web`               | Next.js public site                                         |
+| `apps/artboard`          | Headless render target for PDF/PNG/DOCX export              |
+| `libs/shared/dto`        | Zod schemas + `createZodDto` DTOs — **the shared contract** |
+| `libs/shared/ui`         | `@org/ui` component library (Button, Input, Select, …)      |
+| `libs/shared/utils`      | `@org/utils` — enums, errors, config, i18n, helpers         |
+| `libs/shared/hooks`      | `@org/hooks` React hooks                                    |
+| `libs/shared/store`      | `@org/store` client state                                   |
+| `libs/shared/api-client` | `@org/api-client` typed API client                          |
+| `tools/prisma`           | `schema.prisma`, migrations, seed                           |
 
 ## Ports
 
-| App      | Port  |
-| -------- | ----- |
-| app      | 6100  |
-| web      | 6110  |
-| artboard | 6120  |
-| api      | 6130  |
+| App      | Port |
+| -------- | ---- |
+| app      | 7100 |
+| web      | 7110 |
+| artboard | 7120 |
+| api      | 7130 |
 
 These are set in `apps/app/vite.config.mts`, `apps/web/project.json`,
 `apps/artboard/vite.config.mts`, and `PORT` in `.env` (API). If you change one, also
@@ -55,7 +55,7 @@ update the matching `CORS_ORIGIN`, `FRONTEND_URL`, `*_API_URL`, and OAuth callba
 3. **Use `@org/ui`.** Always use the shared components (`Select`, `Input`, …) — never raw
    native elements like `<select>`. Keep the look-and-feel consistent.
 4. **Wrap UI strings for i18n.** New user-facing strings go through `t('key', 'English
-   default')` as you write them.
+default')` as you write them.
 5. **Interface-first integrations.** Any external/provider seam (AI / OCR / storage /
    payment / mail) goes through interface → registry → factory → config-driven selection,
    with capability negotiation and observable fallbacks. Interface the seams, not

@@ -877,6 +877,93 @@ model Listing {
   @@index([supplierId])
 }
 
+/// Buyer requirement for produce procurement. Phase 2A keeps this as a
+/// workflow record only; no escrow/funds movement happens here.
+model Rfq {
+  id               String   @id @default(cuid())
+  domainKey        String
+  buyerOrgId       String?
+  createdById      String?
+  /// draft | open | matched | sampling | awarded | closed | cancelled
+  status           String   @default("draft")
+  title            String
+  deliveryState    String?
+  deliveryDistrict String?
+  targetDate       DateTime?
+  budgetMinPaise   Int?
+  budgetMaxPaise   Int?
+  paymentTerms     String?
+  notes            String?
+  metadataJson     Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lines             RfqLine[]
+  responses         RfqResponse[]
+  validationSignals BuyerValidationSignal[]
+
+  @@index([domainKey, status])
+  @@index([buyerOrgId])
+  @@index([createdAt])
+}
+
+/// One commodity/lot requirement inside an RFQ.
+model RfqLine {
+  id             String @id @default(cuid())
+  rfqId          String
+  rfq            Rfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  commodityKey   String
+  quantity       Float
+  unit           String
+  targetGrade    String?
+  attributesJson Json?
+
+  @@index([rfqId])
+  @@index([commodityKey])
+}
+
+/// Supplier/listing response or generated match suggestion for an RFQ.
+model RfqResponse {
+  id                String   @id @default(cuid())
+  rfqId             String
+  rfq               Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierId        String
+  listingId         String?
+  /// suggested | shortlisted | quoted | rejected | awarded
+  status            String   @default("suggested")
+  quotedPricePaise  Int?
+  availableQuantity Float?
+  unit              String?
+  deliveryDate      DateTime?
+  notes             String?
+  matchScore        Float?
+  matchReasonsJson  Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([rfqId, supplierId, listingId])
+  @@index([rfqId, status])
+  @@index([supplierId])
+  @@index([listingId])
+}
+
+/// Phase-0/2A commercial validation signal: what buyers say they will pay for.
+model BuyerValidationSignal {
+  id          String   @id @default(cuid())
+  rfqId       String?
+  rfq         Rfq?     @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  buyerOrgId  String?
+  /// verification_fee_interest | qc_fee_interest | pilot_commitment | rejected_price
+  signal      String
+  amountPaise Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([rfqId])
+  @@index([buyerOrgId])
+  @@index([signal])
+}
+
 /// A running state-machine instance interpreted by the generic WorkflowEngine.
 /// `workflowVersion` pins the config version so republishing config never
 /// breaks live flows.
@@ -957,16 +1044,33 @@ model SupplierDocument {
   supplierId       String
   supplier         Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   domainKey        String
-  /// matches a key in supplier_type.required_documents
+  /// A config key from supplier_type.required_documents, or "other" for a
+  /// custom/ad-hoc document the user chose to add.
   docKey           String
+  /// Human-readable title. Required for custom ("other") docs; for config docs
+  /// it defaults to the humanized docKey.
+  label            String?
+  /// Optional free-text note from the uploader (e.g. "renewal due Mar 2027").
+  note             String?
   fileRef          String
   mime             String
-  /// pending | accepted | rejected
+  /// Original filename + byte size, kept so reviewers see what was uploaded.
+  originalName     String?
+  sizeBytes        Int?
+  /// pending | accepted | rejected — review state (see review fields below).
   status           String   @default("pending")
   verifiedBySignal String?
-  uploadedAt       DateTime @default(now())
+  /// Who uploaded (User id), for the audit trail.
+  uploadedById     String?
+  /// Admin review trail: decision note, reviewer, and when decided.
+  reviewNote       String?
+  reviewedById     String?
+  decidedAt        DateTime?
+  uploadedAt       DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
 
   @@index([supplierId, docKey])
+  @@index([supplierId, status])
 }
 
 /// Captured media (photo/video), optionally geotagged, per supplier_type config.

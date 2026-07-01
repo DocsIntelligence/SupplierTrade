@@ -5,7 +5,7 @@
  */
 
 export const WEB_ENV = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:6130/api',
-  webUrl: process.env.NEXT_PUBLIC_WEB_URL ?? 'http://localhost:6110',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:7130/api',
+  webUrl: process.env.NEXT_PUBLIC_WEB_URL ?? 'http://localhost:7110',
   razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '',
 } as const;

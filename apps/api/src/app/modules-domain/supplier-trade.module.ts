@@ -3,6 +3,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { ListingsModule } from './listings/listings.module';
 import { VerificationEngineModule } from './verification-engine/verification-engine.module';
 import { QcModule } from './qc/qc.module';
+import { RfqModule } from './rfq/rfq.module';
 
 /**
  * SupplierTrade business modules (the multi-vertical trust + quality layer).
@@ -17,6 +18,7 @@ import { QcModule } from './qc/qc.module';
     ListingsModule,
     VerificationEngineModule,
     QcModule,
+    RfqModule,
   ],
 })
 export class SupplierTradeModule {}

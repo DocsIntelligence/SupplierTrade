@@ -289,6 +289,12 @@ async function main() {
     role: 'user',
   });
   console.log(`✅ Users seeded (password = "${password}")`);
+
+  // ── SupplierTrade demo data (agriculture) ────────────────────────
+  console.log('Seeding SupplierTrade demo data…');
+  const { seedSupplierTradeDemo } = await import('./seed-data/suppliertrade');
+  await seedSupplierTradeDemo(prisma);
+  console.log('✅ SupplierTrade demo seeded');
 }
 
 main()

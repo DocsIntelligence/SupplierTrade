@@ -56,12 +56,13 @@ This is the durable, checked-in source of truth for the starter's boilerplate ro
 # SupplierTrade — multi-vertical platform (new project)
 
 > Plan docs: `docs/PLANNING.md` (master + guardrails), `docs/DOMAIN-ARCHITECTURE.md` (config design),
-> `docs/SUPPLIERTRADE-PLAN.md` (concrete build plan + gap analysis).
+> `docs/SUPPLIERTRADE-PLAN.md` (concrete Phase-1 plan + gap analysis),
+> `docs/17-suppliertrade-market-next-phase-PLAN.md` (India market analysis + Phase-2A plan).
 > Launch sub-vertical: **agri-output / produce** (decided 2026-07-01).
 
 ## Phase 0 — pricing/validation (business, not code)
 
-- [ ] Confirm a produce buyer pays for verification/QC; output `verification_fee` + `qc_fee` numbers.
+- [x] Market-backed pricing hypothesis: `verification_fee = ₹1,500`, `qc_fee = ₹1,200`, field QC ₹2,500-₹5,000; validate with 5 buyer calls and 3 paid-intent signals.
 
 ## Phase 1 — platform core + agriculture config
 
@@ -138,5 +139,40 @@ This is the durable, checked-in source of truth for the starter's boilerplate ro
 
 ## Phase 2+ (NOT NOW)
 
-- [ ] RFQ + matching + WhatsApp intake · Layer-2 read-only domain-config admin viewer
+- [x] **Phase 2A plan:** RFQ + verified matching + paid QC validation (`docs/17-suppliertrade-market-next-phase-PLAN.md`)
+- [x] Prisma models: `Rfq`, `RfqLine`, `RfqResponse`, `BuyerValidationSignal` + status unions — migration `20260701103000_suppliertrade_rfq` applied
+- [x] `@org/dto` RFQ schemas + `rfqListQuerySchema` + `RFQ_SORT_FIELDS`
+- [x] `modules-domain/rfq`: `RfqService` (CRUD, lines, open, responses, QC request, close, validation) + `RfqController` (full API surface plan §7)
+- [x] Deterministic `MatchingService`: commodity (disqualifying) + verification grade + QC grade + geography + quantity fit + recency → 0–100 score with transparent per-factor reasons
+- [x] Buyer RFQ console: `RfqList` (server DataTable), `RfqCreate` (lookup commodity lines), `RfqDetail` (matches + graded StatusBadge + why-match reasons + shortlist/award + QC request + buyer-intent) + routes + sidebar nav; EN+HI strings (144-key parity)
+- [x] Read-only domain config inspector `GET /domains/:key/inspect` (admin, Layer 2): workflow, profiles, referenced-vs-registered plugin keys — no editing
+- [x] Validation dashboard cards on `Dashboard` (RFQs / matches / QC requested / paid-intent + ₹) from `GET /rfqs/validation-summary`
+- [x] E2E verified via HTTP: create→open→generate matches (scored 66/60, transparent reasons)→response→QC request→paid-intent→award→summary; 3 demo RFQs seeded (open/matched/awarded)
+- [x] **Follow-up:** permanent RFQ + supplier/listing/QC demo seed (`seed-data/suppliertrade.ts`, idempotent, wired into `seed.ts`)
+- [x] **Follow-up:** per-response reject action in RFQ detail (over existing `updateResponse` endpoint)
+- [x] **Follow-up:** `matching.service.spec.ts` — 7 tests locking the deterministic scoring contract (full=100, flagged=70, quantity/geography scaling, commodity disqualification, ranking)
+- [ ] **Follow-up:** supplier-side "respond to RFQ" view (buyer console done; supplier response is admin/manual today); Hindi review of buyer-console copy
+- [ ] Later Phase 2B: WhatsApp intake after RFQ workflow proves useful
 - [ ] QC ops + escrow via PSP partner (Phase 3) · ONDC/eNAM sourcing (Phase 4) · Layer-3 config studio (last, gated)
+
+## Phase 1 — Hindi-first, plain-language UX (low-literacy audience)
+- [x] Full EN + HI translations for supplier flows (`public/locales/{en,hi}/translation.json`, `st.*` namespace)
+- [x] i18n auto-resolves `hi-IN`→`hi` (`supportedLngs`+`nonExplicitSupportedLngs`); EN|हिंदी pill toggle in onboarding
+- [x] `friendlyStatus()` + `<StatusBadge>` — traffic-light plain-word status (Trusted/Checking/Needs a look/Not started), wired into Dashboard, SuppliersList, SupplierDetail (header + verification + signals)
+- [x] Onboarding: 3-step wizard, large icon supplier-type cards, big `size="lg"` controls, review step
+- [x] DocumentsPanel: camera-first capture (`<input capture>`, "Take photo"), plain labels ("Papers", "Photos"), Required/Optional chips
+- [x] Nav + layout labels localized; UI-STANDARDS §4b codifies the audience conventions
+- [x] app typecheck + lint clean (my files); `nx build app` ok; dev server serves HI + transforms all modules
+
+## Phase 2A+ — document store: custom docs + review trail
+- [x] `SupplierDocument` model extended: `label`, `note`, `originalName`, `sizeBytes`, `uploadedById`, `reviewNote`, `reviewedById`, `decidedAt` (migration `suppliertrade_document_review`)
+- [x] Custom/"other" documents (`CUSTOM_DOC_KEY` in `@org/dto`, label required) + `reviewDocumentSchema`; upload captures metadata + audit
+- [x] Admin review endpoint `PATCH /suppliers/:id/documents/:docId/review` (RolesGuard admin; reject requires note); AuditLog `supplier_document.*`
+- [x] `DocumentsPanel`: `OtherDocs` add-custom form, `DocItem` rich detail (status/note/size/date/reviewer note) + admin accept/reject; EN+HI (161-key parity)
+- [x] Verified E2E: custom upload (label required, metadata stored), reject-needs-note, accept, non-admin review→403 / upload allowed, audit trail recorded
+
+## Phase 2A+ — multi-photo media flows per supplier type
+- [x] Media uploader supports **multi-select** (gallery, `multiple`) + camera capture (single); uploads run sequentially with geo fetched once; per-field `min` progress badge (n/min)
+- [x] Config media flows per type (agriculture v2): fpo = produce_photos(min3,geo,req) + warehouse_photos(min2) + produce_video; trader = storefront_photos(min2,req) + stock_photos(min2); processor = facility_photos(min3,req) + processing_video
+- [x] Photo/video-aware button labels (Take photo/Record video · Add photos/Add video); EN+HI (163-key parity)
+- [x] Domain bumped to v2 (v1 snapshot preserved); verified E2E: multi-photo upload+geotag, video upload, image→video 400, requirements list new media

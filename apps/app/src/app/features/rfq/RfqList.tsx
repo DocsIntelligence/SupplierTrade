@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -12,24 +13,17 @@ import {
   type DataTableSort,
 } from '@org/ui';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
-import { UserPlus } from 'lucide-react';
-import { StatusBadge } from './StatusBadge';
-import { st, type DomainSummary, type Supplier } from './api';
+import { FilePlus2 } from 'lucide-react';
+import { st, type DomainSummary, type RfqSummary } from '../suppliertrade/api';
 
 const PAGE_SIZE = 20;
 
-/**
- * Suppliers list — the reference server-side table (docs/UI-STANDARDS.md):
- * pagination, search, and sort are all handled by the API via the DataTable
- * `server` contract. Built entirely from @org/ui components (no native controls).
- */
-export function SuppliersList() {
+/** Buyer RFQ console list — server-side DataTable (docs/UI-STANDARDS §2). */
+export function RfqList() {
   const { t } = useTranslation();
   const [domains, setDomains] = useState<DomainSummary[]>([]);
   const [domainKey, setDomainKey] = useState('');
-
-  const [rows, setRows] = useState<Supplier[]>([]);
+  const [rows, setRows] = useState<RfqSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
@@ -45,13 +39,13 @@ export function SuppliersList() {
         setDomains(d);
         setDomainKey((p) => p || d[0]?.key || '');
       })
-      .catch(() => toast.error('Could not load domains'));
-  }, []);
+      .catch(() => toast.error(t('st.common.loading')));
+  }, [t]);
 
   const fetchPage = useCallback(() => {
     if (!domainKey) return;
     setLoading(true);
-    st.suppliers({
+    st.rfqs({
       domainKey,
       page,
       pageSize: PAGE_SIZE,
@@ -63,15 +57,14 @@ export function SuppliersList() {
         setRows(res.items);
         setTotal(res.total);
       })
-      .catch(() => toast.error('Could not load suppliers'))
+      .catch(() => toast.error(t('st.common.loading')))
       .finally(() => setLoading(false));
-  }, [domainKey, page, query, sort]);
+  }, [domainKey, page, query, sort, t]);
 
   useEffect(() => {
     fetchPage();
   }, [fetchPage]);
 
-  // Reset to first page when the domain filter changes.
   useEffect(() => {
     setPage(1);
   }, [domainKey]);
@@ -79,55 +72,47 @@ export function SuppliersList() {
   const columns = useMemo(
     () => [
       {
-        key: 'legalName',
-        header: t('st.suppliers.colName'),
-        cell: (r: Supplier) => (
+        key: 'title',
+        header: t('st.rfq.colTitle'),
+        cell: (r: RfqSummary) => (
           <Link
-            to={`/suppliers/${r.id}`}
+            to={`/rfqs/${r.id}`}
             className="font-medium text-primary hover:underline"
           >
-            {r.legalName}
+            {r.title}
           </Link>
         ),
-        sortValue: (r: Supplier) => r.legalName,
-      },
-      {
-        key: 'supplierType',
-        header: t('st.suppliers.colType'),
-        cell: (r: Supplier) => (
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
-            {r.supplierType}
-          </span>
-        ),
-        sortValue: (r: Supplier) => r.supplierType,
+        sortValue: (r: RfqSummary) => r.title,
       },
       {
         key: 'status',
-        header: t('st.suppliers.colStatus'),
-        cell: (r: Supplier) => <StatusBadge status={r.status} size="sm" />,
-        sortValue: (r: Supplier) => r.status,
+        header: t('st.rfq.colStatus'),
+        cell: (r: RfqSummary) => <RfqStatusChip status={r.status} />,
+        sortValue: (r: RfqSummary) => r.status,
       },
       {
-        key: 'gstin',
-        header: 'GSTIN',
-        cell: (r: Supplier) =>
-          r.gstin ? (
-            <span className="font-mono text-xs text-foreground/70">
-              {r.gstin}
-            </span>
-          ) : (
-            <span className="text-foreground/40">—</span>
-          ),
+        key: 'lines',
+        header: t('st.rfq.colLines'),
+        cell: (r: RfqSummary) => (
+          <span className="tabular-nums">{r._count?.lines ?? 0}</span>
+        ),
+      },
+      {
+        key: 'responses',
+        header: t('st.rfq.colResponses'),
+        cell: (r: RfqSummary) => (
+          <span className="tabular-nums">{r._count?.responses ?? 0}</span>
+        ),
       },
       {
         key: 'createdAt',
-        header: t('st.suppliers.colCreated'),
-        cell: (r: Supplier) => (
+        header: t('st.rfq.colCreated'),
+        cell: (r: RfqSummary) => (
           <span className="text-xs text-foreground/60">
             {new Date(r.createdAt).toLocaleDateString()}
           </span>
         ),
-        sortValue: (r: Supplier) => r.createdAt,
+        sortValue: (r: RfqSummary) => r.createdAt,
       },
     ],
     [t],
@@ -140,29 +125,29 @@ export function SuppliersList() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {t('st.suppliers.title')}
+            {t('st.rfq.title')}
           </h1>
-          <p className="text-sm text-foreground/60">
-            {t('st.suppliers.subtitle')}
-          </p>
+          <p className="text-sm text-foreground/60">{t('st.rfq.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={domainKey} onValueChange={setDomainKey}>
-            <SelectTrigger className="w-52">
-              <SelectValue placeholder={t('st.onboarding.domain')} />
-            </SelectTrigger>
-            <SelectContent>
-              {domains.map((d) => (
-                <SelectItem key={d.key} value={d.key}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {domains.length > 1 && (
+            <Select value={domainKey} onValueChange={setDomainKey}>
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {domains.map((d) => (
+                  <SelectItem key={d.key} value={d.key}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button asChild size="sm">
-            <Link to={`/onboarding${domainKey ? `?domain=${domainKey}` : ''}`}>
-              <UserPlus size={16} className="mr-1.5" />
-              {t('st.suppliers.newSupplier')}
+            <Link to="/rfqs/new">
+              <FilePlus2 size={16} className="mr-1.5" />
+              {t('st.rfq.new')}
             </Link>
           </Button>
         </div>
@@ -173,14 +158,13 @@ export function SuppliersList() {
           data={rows}
           columns={columns}
           rowKey={(r) => r.id}
-          searchPlaceholder={t('st.suppliers.search')}
-          tableId="st-suppliers"
+          tableId="st-rfqs"
           empty={
             <div className="py-8 text-center text-sm text-foreground/50">
-              {t('st.suppliers.empty')}
+              {t('st.rfq.empty')}
               <div className="mt-2">
-                <Link to="/onboarding" className="text-primary hover:underline">
-                  {t('st.dashboard.addFirst')}
+                <Link to="/rfqs/new" className="text-primary hover:underline">
+                  {t('st.rfq.new')}
                 </Link>
               </div>
             </div>
@@ -209,4 +193,21 @@ export function SuppliersList() {
   );
 }
 
-export default SuppliersList;
+/** RFQ lifecycle chip — distinct from the supplier trust StatusBadge. */
+export function RfqStatusChip({ status }: { status: string }) {
+  const tone =
+    status === 'awarded' || status === 'closed'
+      ? 'bg-success/15 text-success'
+      : status === 'cancelled'
+        ? 'bg-error/15 text-error'
+        : status === 'draft'
+          ? 'bg-secondary text-foreground/60'
+          : 'bg-primary/15 text-primary';
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs capitalize ${tone}`}>
+      {status}
+    </span>
+  );
+}
+
+export default RfqList;

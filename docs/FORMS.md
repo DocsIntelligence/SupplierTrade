@@ -107,6 +107,33 @@ in `SupplierDetail.tsx` (attributes-only form).
 
 ---
 
+## 5b. Documents & media (supplier KYC artifacts)
+
+Suppliers upload documents/media on the supplier detail page (`DocumentsPanel`).
+What's *required* is config-driven (`supplier_type.required_documents` /
+`media_capture`), but users can also add **custom documents** beyond the config.
+
+- **Custom docs** use `docKey = CUSTOM_DOC_KEY` (`"other"`, from `@org/dto`) and
+  require a human `label`; they accept the general pdf/image allowlist.
+- **Every document carries a detail trail** for later inspection by users and
+  admins: `label`, `note`, `originalName`, `sizeBytes`, `uploadedById`,
+  `status` (`pending|accepted|rejected`), `reviewNote`, `reviewedById`,
+  `decidedAt`.
+- **Admin review** is a dedicated endpoint `PATCH /suppliers/:id/documents/:docId/review`
+  (RolesGuard `admin`); rejecting **requires a note**. Uploads and decisions are
+  written to the generic `AuditLog` (`supplier_document.upload|accepted|rejected`).
+- Files go through the `storage` module (S3 or local-disk fallback) and stream
+  back via `/storage/file/<fileRef>`; the frontend fetches them as authenticated
+  blobs (`fileObjectUrl`).
+- **Media (`media_capture`) supports multiple files per field.** Each field
+  declares `type` (image|video), optional `min`, and `geotag`. The uploader
+  offers camera capture (single) **and** a multi-select gallery picker; a batch
+  uploads sequentially with geolocation fetched once, and a `n/min` progress
+  badge shows completeness. Add media flows per `supplier_type` in config — e.g.
+  produce/warehouse photos for an FPO, storefront/stock for a trader, facility
+  photos + processing video for a processor. Bump the domain `version` when you
+  change config (published versions are immutable).
+
 ## 6. Anti-patterns (reject in review)
 
 - ❌ Hardcoded `<option>` lists / inline enums for real reference data → use a lookup.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buildAttributesSchema, type FormFieldMeta } from '@org/dto';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { Button, Card } from '@org/ui';
 import { toast } from 'sonner';
 import { DynamicFields } from './DynamicFields';
 import { DocumentsPanel } from './DocumentsPanel';
+import { StatusBadge } from './StatusBadge';
 import {
   st,
   statusTone,
@@ -19,6 +21,7 @@ import {
 } from './api';
 
 export function SupplierDetail() {
+  const { t } = useTranslation();
   const { id = '' } = useParams();
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [config, setConfig] = useState<DomainConfigView | null>(null);
@@ -34,15 +37,15 @@ export function SupplierDetail() {
   }, [id]);
 
   useEffect(() => {
-    load().catch(() => toast.error('Failed to load supplier'));
-  }, [load]);
+    load().catch(() => toast.error(t('st.common.loading')));
+  }, [load, t]);
 
   const act = async (label: string, fn: () => Promise<unknown>) => {
     setBusy(label);
     try {
       await fn();
       await load();
-      toast.success(`${label} done`);
+      toast.success(t('st.common.done'));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -51,7 +54,7 @@ export function SupplierDetail() {
   };
 
   if (!supplier || !config) {
-    return <p className="text-foreground/60">Loading…</p>;
+    return <p className="text-foreground/60">{t('st.common.loading')}</p>;
   }
 
   const latest = reports[0];
@@ -60,7 +63,7 @@ export function SupplierDetail() {
     <div className="max-w-4xl mx-auto grid gap-5">
       <div>
         <Link to="/suppliers" className="text-sm text-primary hover:underline">
-          ← Back to suppliers
+          ← {t('st.supplier.back')}
         </Link>
       </div>
 
@@ -80,35 +83,29 @@ export function SupplierDetail() {
               )}
             </div>
           </div>
-          <span
-            className={`text-sm px-3 py-1 rounded-full capitalize ${statusTone(supplier.status)}`}
-          >
-            {supplier.status}
-          </span>
+          <StatusBadge status={supplier.status} showHint />
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Button
-            size="sm"
             variant="secondary"
             disabled={supplier.status !== 'draft' || busy !== null}
-            onClick={() =>
-              act('Submit', () => st.supplierEvent(id, 'submit'))
-            }
+            onClick={() => act('Submit', () => st.supplierEvent(id, 'submit'))}
           >
-            Submit
+            {t('st.supplier.submit')}
           </Button>
           <Button
-            size="sm"
             disabled={supplier.status === 'draft' || busy !== null}
             onClick={() => act('Verification', () => st.verify(id))}
           >
-            {busy === 'Verification' ? 'Running…' : 'Run verification'}
+            {busy === 'Verification'
+              ? t('st.supplier.running')
+              : t('st.supplier.runVerification')}
           </Button>
         </div>
         {supplier.status === 'draft' && (
           <p className="mt-2 text-xs text-foreground/50">
-            Submit the supplier before running verification.
+            {t('st.supplier.submitFirst')}
           </p>
         )}
       </Card>
@@ -117,21 +114,14 @@ export function SupplierDetail() {
       <Card className="rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">
-            Verification
+            {t('st.supplier.verification')}
           </h2>
-          {latest && (
-            <span
-              className={`text-sm px-3 py-1 rounded-full capitalize ${statusTone(latest.status)}`}
-            >
-              {latest.status}
-            </span>
-          )}
+          {latest && <StatusBadge status={latest.status} />}
         </div>
 
         {!latest ? (
           <p className="text-foreground/60 text-sm">
-            No verification run yet. Every result is graded with evidence —
-            never a plain pass/fail.
+            {t('st.supplier.noVerification')}
           </p>
         ) : (
           <div className="grid gap-3">
@@ -142,8 +132,8 @@ export function SupplierDetail() {
               <SignalCard key={key} signalKey={key} sig={sig} />
             ))}
             <p className="text-xs text-foreground/40">
-              Ran {new Date(latest.createdAt).toLocaleString()} ·{' '}
-              {reports.length} report(s) total
+              {new Date(latest.createdAt).toLocaleString()} ·{' '}
+              {t('st.supplier.reportsTotal', { count: reports.length })}
             </p>
           </div>
         )}
@@ -165,6 +155,7 @@ function SignalCard({
   signalKey: string;
   sig: SignalResult;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-lg border border-border/60 p-3">
@@ -172,11 +163,7 @@ function SignalCard({
         <span className="font-medium text-sm capitalize">
           {signalKey.replace(/_/g, ' ')}
         </span>
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full uppercase ${statusTone(sig.status)}`}
-        >
-          {sig.status}
-        </span>
+        <StatusBadge status={sig.status} size="sm" />
       </div>
       <p className="text-sm text-foreground/70 mt-1">{sig.summary}</p>
       <button
@@ -184,7 +171,7 @@ function SignalCard({
         className="text-xs text-primary hover:underline mt-1"
         onClick={() => setOpen((o) => !o)}
       >
-        {open ? 'Hide evidence' : 'Show evidence'}
+        {open ? t('st.supplier.hideEvidence') : t('st.supplier.showEvidence')}
       </button>
       {open && (
         <pre className="mt-2 text-xs bg-secondary/40 rounded-md p-2 overflow-x-auto">

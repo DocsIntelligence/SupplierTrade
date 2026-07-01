@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
+  ClipboardList,
   Flag,
+  FlaskConical,
+  IndianRupee,
   Loader,
+  Search,
   ShieldCheck,
   Store,
   UserPlus,
@@ -15,13 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@org/ui';
+import { useTranslation } from 'react-i18next';
 import { selectUser, useAppSelector } from '@org/store';
+import { StatusBadge } from '../suppliertrade/StatusBadge';
 import {
   st,
-  statusTone,
   type DomainSummary,
   type QcJob,
   type Supplier,
+  type ValidationSummary,
 } from '../suppliertrade/api';
 import {
   ChartCard,
@@ -38,11 +44,13 @@ const IN_VERIFICATION = ['submitted', 'verifying'];
 const FLAGGED = ['flagged', 'disputed'];
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const user = useAppSelector(selectUser);
   const [domains, setDomains] = useState<DomainSummary[]>([]);
   const [domainKey, setDomainKey] = useState('');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [qcJobs, setQcJobs] = useState<QcJob[]>([]);
+  const [validation, setValidation] = useState<ValidationSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,10 +68,12 @@ export function Dashboard() {
     Promise.all([
       st.suppliers({ domainKey, pageSize: 100 }),
       st.qcJobs(domainKey),
+      st.validationSummary(domainKey).catch(() => null),
     ])
-      .then(([s, q]) => {
+      .then(([s, q, v]) => {
         setSuppliers(s.items);
         setQcJobs(q);
+        setValidation(v);
       })
       .finally(() => setLoading(false));
   }, [domainKey]);
@@ -77,10 +87,12 @@ export function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
-            Dashboard
+            {t('st.nav.dashboard')}
           </p>
           <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] ?? 'there'}
+            {t('st.dashboard.welcome', {
+              name: user?.name?.split(' ')[0] ?? '',
+            })}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -103,40 +115,47 @@ export function Dashboard() {
             className="flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             <UserPlus size={16} />
-            Onboard supplier
+            {t('st.dashboard.onboard')}
           </Link>
         </div>
       </div>
 
       {/* Signature: graded trust overview */}
       <section>
-        <SectionLabel>Trust overview {domainName && `· ${domainName}`}</SectionLabel>
+        <SectionLabel>
+          {t('st.dashboard.trustOverview')} {domainName && `· ${domainName}`}
+        </SectionLabel>
         <Panel className="p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-foreground/60">Verified suppliers</p>
+              <p className="text-sm text-foreground/60">
+                {t('st.dashboard.verifiedSuppliers')}
+              </p>
               <p className="mt-1 text-4xl font-semibold tracking-tight tabular-nums">
                 {m.total ? Math.round((m.verified / m.total) * 100) : 0}
                 <span className="text-2xl text-foreground/40">%</span>
               </p>
               <p className="mt-1 text-xs text-foreground/50">
-                {m.verified} of {m.total} suppliers · graded, never binary
+                {t('st.dashboard.ofTotal', {
+                  count: m.verified,
+                  total: m.total,
+                })}
               </p>
             </div>
             {m.inVerification > 0 && (
               <span className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                {m.inVerification} in verification
+                {m.inVerification} · {t('st.dashboard.inVerification')}
               </span>
             )}
           </div>
           <div className="mt-5">
             <TrustBar
               segments={[
-                { label: 'Verified', value: m.verified, className: 'bg-success' },
-                { label: 'In verification', value: m.inVerification, className: 'bg-primary' },
-                { label: 'Flagged', value: m.flagged, className: 'bg-error' },
-                { label: 'Draft', value: m.draft, className: 'bg-secondary' },
+                { label: t('st.dashboard.verified'), value: m.verified, className: 'bg-success' },
+                { label: t('st.dashboard.inVerification'), value: m.inVerification, className: 'bg-primary' },
+                { label: t('st.dashboard.needsReview'), value: m.flagged, className: 'bg-error' },
+                { label: t('st.status.notStarted'), value: m.draft, className: 'bg-secondary' },
               ]}
             />
           </div>
@@ -146,24 +165,24 @@ export function Dashboard() {
       {/* Stat cards */}
       <section>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Suppliers" sub={domainName} value={m.total} icon={Store} />
+          <StatCard label={t('st.dashboard.suppliers')} sub={domainName} value={m.total} icon={Store} />
           <StatCard
-            label="Verified"
-            sub={m.total ? `${Math.round((m.verified / m.total) * 100)}% of base` : '—'}
+            label={t('st.dashboard.verified')}
+            sub={m.total ? `${Math.round((m.verified / m.total) * 100)}%` : '—'}
             value={m.verified}
             icon={ShieldCheck}
             tone="text-success"
           />
           <StatCard
-            label="In verification"
-            sub="Awaiting signals"
+            label={t('st.dashboard.inVerification')}
+            sub={t('st.status.checkingHint')}
             value={m.inVerification}
             icon={Loader}
             tone="text-primary"
           />
           <StatCard
-            label="Needs review"
-            sub="Flagged / disputed"
+            label={t('st.dashboard.needsReview')}
+            sub={t('st.status.reviewHint')}
             value={m.flagged}
             icon={Flag}
             tone="text-error"
@@ -197,15 +216,52 @@ export function Dashboard() {
         </div>
       </section>
 
+      {/* Market validation (Phase-2A paid-intent instrumentation) */}
+      {validation && validation.rfqsOpened > 0 && (
+        <section>
+          <SectionLabel>{t('st.rfq.validation')}</SectionLabel>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <StatCard
+              label={t('st.rfq.title')}
+              value={validation.rfqsOpened}
+              icon={ClipboardList}
+            />
+            <StatCard
+              label={t('st.rfq.matches')}
+              value={validation.matches}
+              icon={Search}
+              tone="text-primary"
+            />
+            <StatCard
+              label={t('st.rfq.requestQc')}
+              value={validation.qcRequested}
+              icon={FlaskConical}
+              tone="text-warning"
+            />
+            <StatCard
+              label={t('st.rfq.validation')}
+              sub={
+                validation.amountPaise
+                  ? `₹${(validation.amountPaise / 100).toLocaleString()}`
+                  : undefined
+              }
+              value={validation.paidIntentCount}
+              icon={IndianRupee}
+              tone="text-success"
+            />
+          </div>
+        </section>
+      )}
+
       {/* Recent */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
-          <SectionLabel>Recent activity</SectionLabel>
+          <SectionLabel>{t('st.dashboard.recentActivity')}</SectionLabel>
           <Panel className="p-0">
             {loading ? (
-              <Empty text="Loading…" />
+              <Empty text={t('st.common.loading')} />
             ) : m.activity.length === 0 ? (
-              <Empty text="No activity yet." />
+              <Empty text={t('st.dashboard.nothingYet')} />
             ) : (
               <ul className="divide-y divide-border/50">
                 {m.activity.map((a, i) => (
@@ -221,14 +277,14 @@ export function Dashboard() {
         </div>
 
         <div>
-          <SectionLabel>Recent suppliers</SectionLabel>
+          <SectionLabel>{t('st.dashboard.recentSuppliers')}</SectionLabel>
           <Panel className="p-0">
             {loading ? (
-              <Empty text="Loading…" />
+              <Empty text={t('st.common.loading')} />
             ) : suppliers.length === 0 ? (
               <Empty
-                text="No suppliers yet."
-                action={{ to: '/onboarding', label: 'Onboard the first supplier' }}
+                text={t('st.dashboard.noSuppliers')}
+                action={{ to: '/onboarding', label: t('st.dashboard.addFirst') }}
               />
             ) : (
               <ul className="divide-y divide-border/50">
@@ -241,11 +297,7 @@ export function Dashboard() {
                       <span className="flex-1 truncate font-medium text-foreground">
                         {s.legalName}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs capitalize ${statusTone(s.status)}`}
-                      >
-                        {s.status}
-                      </span>
+                      <StatusBadge status={s.status} size="sm" />
                       <ArrowUpRight size={14} className="text-foreground/30" />
                     </Link>
                   </li>
